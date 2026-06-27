@@ -1,0 +1,14 @@
+{
+  "source_url": "https://www.inman.com/2026/05/30/acme-ai-isa-raises-25m/",
+  "source_type": "rss",
+  "title": "Acme raises $25M for an autonomous AI ISA targeting real estate teams",
+  "summary": "Acme's AI ISA auto-qualifies and follows up on inbound real estate leads in under a minute, raising $25M to expand across brokerages. Directly overlaps revenue_acceleration_engine (speed-to-lead, AI follow-up) and targets Omerion's brokerage/team operators.",
+  "impact_tag": "daam",
+  "estimated_priority": "high",
+  "metadata": {
+    "service_package_tag": "revenue_acceleration_engine",
+    "run_date": "2026-06-26 UTC",
+    "competitive_threat": true,
+    "keyword_matches": ["AI agent", "lead response", "speed-to-lead", "automation funding"]
+  }
+}

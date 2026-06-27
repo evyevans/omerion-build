@@ -1,0 +1,66 @@
+# Railway services for the Omerion runtime.
+#
+# Canonical app is `omerion/main.py` (FastAPI + APScheduler + Supabase
+# Realtime event broker). The legacy root `main.py` + `core/runtime/
+# worker_main.py` services were removed in Wave 0 of the hybrid-
+# orchestration cleanup — APScheduler inside the api service replaces
+# the standalone worker.
+
+[build]
+builder = "DOCKERFILE"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+# ─── Service 1: omerion-api (canonical FastAPI + scheduler + broker) ───
+# Hosts:
+#   * /inbound/* (HITL approve/reject, Discord route, Fireflies, Stripe,
+#     Twilio SMS, knowledge base webhooks)
+#   * /agents/*, /reports/*, /mission-control (control plane)
+#   * APScheduler cron loops (replaces deleted omerion-worker service)
+#   * Supabase Realtime event broker (start_broker)
+[[services]]
+name = "omerion-api"
+dockerfilePath = "docker/Dockerfile.api"
+
+[services.deploy]
+startCommand = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 30
+numReplicas = 1
+
+[services.variables]
+# The scheduler's bot-liveness watchdog (_check_bot_liveness) GETs this and
+# alerts #mission-control if the bot is unreachable. Internal Railway URL of the
+# bot's /health sidecar (port = BOT_HEALTH_PORT on the bot service).
+BOT_HEALTH_URL = "http://${{omerion-discord-bot.RAILWAY_PRIVATE_DOMAIN}}:8002/health"
+
+# ─── Service 2: omerion-discord-bot ────────────────────────────────────
+# Persistent process. Hosts the Discord client, HITL review cards,
+# narration, slash commands, daily digest. /health sidecar at
+# $BOT_HEALTH_PORT (default 8002) so Railway can detect a hung bot.
+[[services]]
+name = "omerion-discord-bot"
+dockerfilePath = "docker/Dockerfile.bot"
+
+[services.deploy]
+startCommand = "python discord/omerion_bot.py"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+numReplicas = 1
+
+[services.variables]
+BOT_HEALTH_PORT = "8002"
+# ─── THE OUTAGE FIX ───────────────────────────────────────────────────────────
+# The bot service previously set ONLY BOT_HEALTH_PORT, so OMERION_WEBHOOK_TOKEN was
+# unset (os.environ KeyError → crash-loop → Railway BACKOFF → bot down since ~May 28)
+# and OMERION_API_BASE_URL defaulted to localhost:8000 (unreachable from this
+# container). These reference variables pull from the healthy omerion-api service —
+# no secret is committed, and the token is guaranteed to match what the backend's
+# require_bearer expects.
+OMERION_API_BASE_URL  = "http://${{omerion-api.RAILWAY_PRIVATE_DOMAIN}}:${{omerion-api.PORT}}"
+OMERION_WEBHOOK_TOKEN = "${{omerion-api.OMERION_WEBHOOK_TOKEN}}"
+# Bot gateway token — bot-specific secret. Set on this service (Railway UI) or as a
+# project shared variable; referenced here so it is never committed to git.
+DISCORD_BOT_TOKEN     = "${{shared.DISCORD_BOT_TOKEN}}"

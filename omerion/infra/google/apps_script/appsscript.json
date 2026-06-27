@@ -1,0 +1,21 @@
+{
+  "timeZone": "America/Toronto",
+  "dependencies": {
+    "enabledAdvancedServices": [
+      { "userSymbol": "Sheets", "serviceId": "sheets", "version": "v4" },
+      { "userSymbol": "Gmail",  "serviceId": "gmail",  "version": "v1" }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "webapp": {
+    "access": "DOMAIN",
+    "executeAs": "USER_DEPLOYING"
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/script.scriptapp"
+  ]
+}

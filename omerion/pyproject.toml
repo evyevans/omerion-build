@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omerion"
+version = "0.1.0"
+description = "Omerion internal multi-agent backend — 14 AI agent employees running GTM, delivery, and R&D"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph>=0.2.0",
+    "langgraph-checkpoint-postgres>=2.0.0",
+    "claude-agent-sdk>=0.1.0",
+    "anthropic>=0.40.0",
+    "openai>=1.50.0",                 # embeddings only
+    "supabase>=2.7.0",
+    "psycopg[binary]>=3.2.0",          # PostgresSaver driver
+    "pinecone[asyncio]>=6.0.0",
+    "google-api-python-client>=2.140.0",
+    "google-auth>=2.34.0",
+    "google-auth-oauthlib>=1.2.1",
+    "gspread>=6.1.0",
+    "elevenlabs>=1.50.0",
+    "httpx>=0.27.0",
+    "tenacity>=9.0.0",
+    "pydantic[email]>=2.9.0",
+    "pydantic-settings>=2.5.0",
+    "PyYAML>=6.0",
+    "python-dotenv>=1.0.1",
+    "structlog>=24.4.0",
+    "beautifulsoup4>=4.12.0",
+    "playwright>=1.47.0",
+    "feedparser>=6.0.11",
+    "PyGithub>=2.4.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "apscheduler[sqlalchemy]>=3.10.4",
+    "croniter>=2.0.0",                 # parses `schedule:` cron strings in .skill.md frontmatter
+    "tiktoken>=0.7.0",                 # token-accurate chunking for KB ingestion pipeline
+    "pdfplumber>=0.11.0",              # PDF text extraction for KB ingestion pipeline
+    "python-docx>=1.1.0",             # .docx extraction for KB ingestion pipeline
+    "browser-use>=0.1.40",             # Claude-native browser agent (replaces hand-rolled Playwright)
+    "ruamel-yaml>=0.18",             # HEALER tools.py — YAML edit with comment preservation
+    "discord.py>=2.4.0",               # Discord bot client for HITL review cards + agent narration
+    "certifi>=2024.0.0",               # CA bundle — bot SSL shim (macOS python.org build has no system certs)
+    "stripe>=10.11.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-mock>=3.14.0",
+    "httpx>=0.27.0",               # TestClient dependency
+    "ruff>=0.6.0",
+    "mypy>=1.11.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["omerion_core*", "agents*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

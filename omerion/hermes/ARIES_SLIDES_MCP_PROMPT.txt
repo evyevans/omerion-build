@@ -1,0 +1,42 @@
+ARIES — Phase 3: Add Google Slides tools to Hermes Google MCP server
+
+Context: OAuth consent already includes presentations scope. Gmail/Calendar/Drive/Docs MCP tools work. Slides is the remaining gap (18 tools today, no presentations).
+
+TASK — Add these tools to the Google MCP server on VPS (mirror docs_create pattern):
+
+1. slides_create
+   - API: Google Slides v1 presentations.create
+   - Auth: OAuth (same refresh token as docs_create — do NOT override scopes)
+   - Input: title (string), optional initial slide title text
+   - Output: presentation_id, presentation_url (https://docs.google.com/presentation/d/{id}/edit)
+
+2. slides_read
+   - API: presentations.get + page elements for first slide
+   - Auth: OAuth
+   - Input: presentation_id
+   - Output: title, slide count, text snippets from first slide
+
+3. slides_add_slide (optional but preferred)
+   - API: presentations.batchUpdate with CreateSlideRequest + InsertTextRequest
+   - Auth: OAuth
+   - Input: presentation_id, slide_title, body_text
+   - Output: slide object ID, updated URL
+
+Implementation rules:
+- Use OAuth credentials from /data/.env (GOOGLE_OAUTH_*). Never pass a narrower scope list than the refresh token was issued with.
+- Do not use service account for Slides write — OAuth only.
+- Register tools in the same FastMCP / MCP server as docs_create and calendar_*.
+- Restart Hermes MCP / agent process after deploy.
+
+VERIFICATION (run live and paste raw output):
+1. slides_create title "Hermes Slides test" with initial slide title "Phase 3 verification"
+2. slides_read on returned presentation_id
+3. slides_add_slide (if implemented): second slide "Probe slide 2"
+4. Return final presentation URL
+
+Report back:
+□ slides_create PASS/FAIL
+□ slides_read PASS/FAIL
+□ slides_add_slide PASS/FAIL or N/A
+□ Total Google MCP tool count after add: [N]
+□ Presentation URL: [url]

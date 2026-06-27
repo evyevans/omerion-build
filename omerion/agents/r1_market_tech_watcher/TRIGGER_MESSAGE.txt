@@ -1,0 +1,13 @@
+Execute your daily Real Estate market-intelligence run now. Use run_date verbatim in the bridge payload and each row's metadata.run_date:
+2026-06-26 UTC
+
+Follow your r1-market-tech-watcher skill end to end: fetch → filter → tag → dedup on source_url → persist via the Omerion bridge (Step 4A) → emit rd.insight.created.
+
+Do NOT run echo $SUPABASE_URL for pre-flight — use Step 4A Omerion bridge with OMERION_WEBHOOK_TOKEN.
+
+Do not consider the run finished until you have printed the run report AND it shows
+supabase_upserts == items_tagged (or a logged per-item error for every shortfall). Report fields:
+feeds_fetched, items_filtered_in, items_tagged, duplicates_dropped, supabase_upserts, errors.
+
+If OMERION_WEBHOOK_TOKEN is empty/unbound or OMERION_API_URL is unfilled, stop and report
+r1_credential_unresolved instead of proceeding. There is no Pinecone write in this runtime.

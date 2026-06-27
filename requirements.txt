@@ -1,0 +1,39 @@
+# Omerion Agentic Workflow Factory — pinned production dependencies.
+# Every package listed below is imported somewhere in core/, api/,
+# departments/, discord/, or obsidian/. No transient deps.
+
+# ── Web framework ─────────────────────────────────────────────────────
+fastapi==0.118.0
+uvicorn[standard]==0.31.0
+starlette==0.40.0
+python-multipart==0.0.12
+
+# ── Settings / data ───────────────────────────────────────────────────
+pydantic==2.9.2
+pydantic-settings==2.6.0
+pyyaml==6.0.2
+python-dotenv==1.0.1
+
+# ── HTTP ──────────────────────────────────────────────────────────────
+httpx==0.27.2
+
+# ── Anthropic (LLM core) ──────────────────────────────────────────────
+anthropic==0.39.0
+
+# ── Telemetry ─────────────────────────────────────────────────────────
+langfuse==2.53.6
+
+# ── Orchestration ─────────────────────────────────────────────────────
+langgraph==0.2.39
+
+# ── Discord ───────────────────────────────────────────────────────────
+discord.py==2.4.0
+
+# ── Vector DB ─────────────────────────────────────────────────────────
+pinecone==5.4.0
+
+# ── Voice transcription (optional, used if OPENAI_API_KEY absent) ─────
+faster-whisper==1.0.3 ; platform_machine != "i686"
+
+# ── Timezone backport (Python <=3.11 safety) ──────────────────────────
+tzdata==2024.2

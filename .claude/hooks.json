@@ -1,0 +1,43 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport sys, json, re\ntool_input = json.loads(sys.argv[1])\npath = tool_input.get('file_path', '')\ndanger_patterns = [r'\\.env$', r'\\.env\\.', r'agents\\.yaml$', r'settings\\.local\\.json$']\nfor p in danger_patterns:\n    if re.search(p, path):\n        print(f'BLOCKED: Writing to {path} requires explicit confirmation. This file affects production.')\n        sys.exit(1)\nsys.exit(0)\n\"",
+            "description": "Block writes to .env, agents.yaml, and Claude settings without confirmation"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport sys, json, re\ntool_input = json.loads(sys.argv[1])\ncmd = tool_input.get('command', '')\ndanger_patterns = [\n    r'DROP\\s+TABLE',\n    r'DROP\\s+SCHEMA',\n    r'TRUNCATE\\s+TABLE',\n    r'DELETE\\s+FROM\\s+contacts',\n    r'DELETE\\s+FROM\\s+scores',\n    r'DELETE\\s+FROM\\s+blueprints',\n    r'rm\\s+-rf',\n    r'pkill\\s+-9',\n]\nfor p in danger_patterns:\n    if re.search(p, cmd, re.IGNORECASE):\n        print(f'BLOCKED: Destructive command detected. Review and confirm explicitly before running.')\n        sys.exit(1)\nsys.exit(0)\n\"",
+            "description": "Block destructive SQL (DROP TABLE, TRUNCATE) and dangerous shell commands"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport sys, json, subprocess, re\ntool_input = json.loads(sys.argv[1])\npath = tool_input.get('file_path', '')\nif re.search(r'omerion/.*\\.py$', path):\n    result = subprocess.run(\n        ['python3', '-m', 'py_compile', path],\n        capture_output=True, text=True\n    )\n    if result.returncode != 0:\n        print(f'SYNTAX ERROR in {path}:')\n        print(result.stderr)\n        sys.exit(2)\n    print(f'Syntax OK: {path}')\nsys.exit(0)\n\"",
+            "description": "Auto-syntax-check all Python files under omerion/ after every write"
+          },
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport sys, json, re, subprocess, os\ntool_input = json.loads(sys.argv[1])\npath = tool_input.get('file_path', '')\nif not re.search(r'omerion/.*\\.py$', path):\n    sys.exit(0)\n# Find nearest tests/ dir relative to the edited file\nd = os.path.dirname(os.path.abspath(path))\nfor _ in range(6):\n    t = os.path.join(d, 'tests')\n    if os.path.isdir(t):\n        result = subprocess.run(\n            ['python3', '-m', 'pytest', t, '-q', '--tb=short', '-x', '--timeout=30'],\n            capture_output=True, text=True, timeout=60\n        )\n        out = (result.stdout + result.stderr)[-800:]\n        print(out)\n        sys.exit(0)\n    d = os.path.dirname(d)\nprint('No tests/ dir found — skipped')\nsys.exit(0)\n\"",
+            "description": "Auto-run pytest on nearest test directory after editing any omerion .py file"
+          }
+        ]
+      }
+    ]
+  }
+}

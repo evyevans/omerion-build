@@ -1,0 +1,45 @@
+# Real-estate research sources, extracted from R1 (market_tech_watcher)
+# configuration in omerion/config/agents.yaml.
+
+market_intelligence:
+  rss:
+    - "https://www.inman.com/feed/"
+    - "https://www.housingwire.com/feed/"
+    - "https://therealdeal.com/feed/"
+    - "https://nationalmortgagenews.com/feed"
+    - "https://www.bisnow.com/rss"
+    - "https://www.theclose.com/feed/"
+
+proptech_tech_radar:
+  rss:
+    - "https://geekestate.com/feed/"
+    - "https://www.builtinla.com/rss.xml"
+    - "https://news.crunchbase.com/feed/?cat=real-estate"
+
+regulatory_and_compliance:
+  rss:
+    - "https://www.nar.realtor/feed"
+    - "https://www.cfpb.gov/about-us/newsroom/rss/"
+    - "https://www.fhfa.gov/rss/news.xml"
+
+competitor_landscape:
+  rss:
+    - "https://www.crunchbase.com/discover/funding_rounds/field/funding_rounds/lead_investor_identifier/real-estate?format=rss"
+
+# Target metros used by MAPPER to localize search queries
+target_metros:
+  - Greater Toronto Area
+  - Phoenix
+  - Dallas-Fort Worth
+  - South Florida
+  - Denver
+
+# Search keyword tags for OSS scouting on GitHub
+oss_search_tags:
+  - agent orchestration
+  - RAG
+  - MLS connectors
+  - Attom CoreLogic wrappers
+  - voice ISA Bland Retell Vapi
+  - real estate automation
+  - LangGraph

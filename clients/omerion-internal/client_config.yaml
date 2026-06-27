@@ -1,0 +1,32 @@
+client_slug: omerion-internal
+industry_pack: real_estate
+brand_voice_md: brand_voice.md
+
+offers: {}            # composed from the industry pack's offers.yaml
+qualification: {}     # composed from the industry pack's qualification.yaml
+
+integrations:
+  crm: google_sheets
+  email: gmail
+  calendar: google
+  pinecone_namespace: omerion-internal
+  discord_channels:
+    leads: "${DISCORD_LEADS_CHANNEL_ID}"
+    hitl: "${DISCORD_HITL_CHANNEL_ID}"
+    mission_control: "${DISCORD_MISSION_CONTROL_CHANNEL_ID}"
+
+departments_enabled:
+  - agentic_factory
+  - lead_gen
+  - research_intelligence
+  - client_delivery
+  - recursive_self_improvement
+
+agents_enabled_extra: []
+agents_disabled: []
+
+slo_overrides:
+  outreach: { p95_latency_ms: 4000 }
+  proposer: { p95_latency_ms: 12000 }
+
+secrets_ref: vault://omerion-internal

@@ -1,0 +1,50 @@
+# Blank client template (Fix #10 — regenerated from ClientConfigSpec).
+# Copy this directory to clients/<your-slug>/ and fill in. The slug must match
+# the directory name and be DNS-safe (kebab-case).
+#
+# Validation: at boot, `core.settings.Settings.validate_for_runtime` will reject
+# any client whose `industry_pack` value is not a directory under industry_packs/.
+
+client_slug: REPLACE_ME
+
+# Must be one of the packs that actually exists under industry_packs/.
+# Current installed packs: real_estate. Add others by creating a new
+# industry_packs/<name>/industry_pack.yaml.
+industry_pack: REPLACE_ME
+
+brand_voice_md: brand_voice.md
+
+# Per-client overrides. Empty {} → fall back to the industry pack's defaults.
+offers: {}
+qualification: {}
+
+integrations:
+  crm: REPLACE_ME                # google_sheets | hubspot | salesforce | pipedrive | airtable
+  email: REPLACE_ME              # gmail | sendgrid | postmark | resend
+  calendar: REPLACE_ME           # google | cal_com | calendly
+  pinecone_namespace: REPLACE_ME
+  # Discord wiring — required for HITL relay + mission control. Use env
+  # interpolation so the same template works across dev/staging/prod.
+  discord_channels:
+    leads: "${DISCORD_LEADS_CHANNEL_ID}"
+    hitl: "${DISCORD_HITL_CHANNEL_ID}"
+    mission_control: "${DISCORD_MISSION_CONTROL_CHANNEL_ID}"
+
+departments_enabled:
+  - lead_gen
+  - client_delivery
+  # Uncomment as you onboard:
+  # - research_intelligence
+  # - agentic_factory
+  # - recursive_self_improvement
+
+agents_enabled_extra: []         # vertical-pack-specific agents (rarely needed)
+agents_disabled: []              # remove agents for client policy reasons
+
+# Per-agent SLO overrides (latency, cost, timeout). Optional.
+# Example for an outreach agent that needs a tighter latency budget:
+#   outreach: { p95_latency_ms: 4000 }
+slo_overrides: {}
+
+# Reference for fetching client-scoped secrets at runtime.
+secrets_ref: vault://REPLACE_ME

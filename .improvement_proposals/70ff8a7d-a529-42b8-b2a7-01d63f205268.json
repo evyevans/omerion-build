@@ -1,0 +1,14 @@
+{
+  "proposal_id": "70ff8a7d-a529-42b8-b2a7-01d63f205268",
+  "kind": "latency",
+  "target_agent": "outreach",
+  "rationale": "speed it up",
+  "expected_delta": {},
+  "file_path": null,
+  "new_content": null,
+  "patch_ref": null,
+  "risk": "low",
+  "confidence": 0.5,
+  "proposed_at": "2026-05-17T19:53:58.554904",
+  "client_slug": "test"
+}

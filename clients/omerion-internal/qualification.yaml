@@ -1,0 +1,53 @@
+# Omerion's own ICP scoring rules — slightly stricter than the RE-pack default.
+# Higher weight on Tier-1 personas, stronger geographic preference, and an
+# explicit signal-based bonus for inbound contact channels.
+
+version: 1
+
+rules:
+  - id: tier1_persona_strict
+    weight: 35
+    when:
+      lead.persona.in: [brokerage_owner, high_volume_agent, team_lead]
+
+  - id: tier1_persona_secondary
+    weight: 22
+    when:
+      lead.persona.in: [investor, wholesaler, property_manager]
+
+  - id: tier2_persona
+    weight: 12
+    when:
+      lead.persona.in: [transaction_attorney, business_attorney]
+
+  - id: team_size_signal
+    weight: 18
+    when:
+      lead.company.team_size.gte: 5
+
+  - id: target_metro
+    weight: 12
+    when:
+      lead.company.metro.in:
+        ["Greater Toronto Area", "Phoenix", "Dallas-Fort Worth", "South Florida", "Denver"]
+
+  - id: north_america
+    weight: 6
+    when:
+      lead.company.country.in: ["United States", "USA", "US", "Canada"]
+
+  - id: no_modern_stack
+    weight: 10
+    when:
+      lead.company.tech_maturity.in: [unknown, none, legacy]
+
+  - id: inbound_signal_bonus
+    weight: 8
+    when:
+      lead.source.in: [referral, founder_dm, podcast_inbound, demo_request]
+
+tiers:
+  A: ">=85"
+  B: "65..84"
+  C: "45..64"
+  reject: "<45"

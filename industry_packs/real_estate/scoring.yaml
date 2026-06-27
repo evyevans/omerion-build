@@ -1,0 +1,53 @@
+# Real-estate fit-score lookup tables, extracted from omerion/omerion_core/fit_score.py.
+# Used by ICP_SCORER when applying the real_estate industry pack.
+
+formula:
+  weights:
+    company_size: 0.25
+    tech_maturity: 0.20
+    industry_match: 0.20
+    title_seniority: 0.20
+    geographic_fit: 0.15
+
+company_size:
+  unknown: 50
+  "1-5": 40
+  "6-20": 70
+  "21-50": 90
+  "51+": 100
+
+tech_maturity:
+  unknown: 65
+  none: 100        # no CRM/automation → very high need
+  legacy: 85
+  modern: 30       # already has good stack → low need
+
+industry_match:
+  brokerage: 100
+  real_estate_team: 95
+  property_management: 90
+  investor_or_developer: 85
+  attorney_real_estate: 80
+  attorney_business: 65
+  other: 30
+
+title_seniority:
+  founder_owner: 100
+  partner_principal: 95
+  c_suite: 90
+  vp_director: 80
+  manager: 60
+  ic: 35
+
+geographic_fit:
+  target_metro: 100
+  same_country: 75
+  other_country: 40
+  unknown: 60
+
+target_metros:
+  - Greater Toronto Area
+  - Phoenix
+  - Dallas-Fort Worth
+  - South Florida
+  - Denver

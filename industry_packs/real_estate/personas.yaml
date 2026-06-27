@@ -1,0 +1,65 @@
+# Extracted from omerion/config/agents.yaml on migration.
+# Real-estate persona taxonomy: 9 personas across 3 tiers.
+
+brokerage_owner:
+  tier: 1
+  priority: 1
+  role_terms: ["Broker Owner", "Designated Broker", "Principal Broker", "Managing Broker", "Brokerage President"]
+  problem_hypothesis: "Running a 10-60 agent brokerage with no shared AI/ops layer; losing agents to bigger tech-forward brands; no centralized lead routing or coaching accountability."
+  kpis: ["agent_productivity_score", "lead_routing_time_seconds", "retention_rate", "gci_per_agent"]
+
+high_volume_agent:
+  tier: 1
+  priority: 2
+  role_terms: ["Top Producer", "Team Leader", "Realtor", "Sales Representative"]
+  problem_hypothesis: "Personally closing 30+ sides/yr; buried in follow-ups, DMs, and paperwork; no VA/ISA leverage."
+  kpis: ["speed_to_lead_minutes", "appointments_booked_per_week", "gci"]
+
+team_lead:
+  tier: 1
+  priority: 3
+  role_terms: ["Team Lead", "Team Owner", "Rainmaker"]
+  problem_hypothesis: "Running a 3-15 agent team; losing 30%+ of leads to slow speed-to-lead; no scalable onboarding."
+  kpis: ["speed_to_lead_minutes", "team_conversion_rate", "agent_ramp_days"]
+
+investor:
+  tier: 1
+  priority: 4
+  role_terms: ["Managing Partner", "Principal", "Acquisitions Director", "Fund Manager"]
+  problem_hypothesis: "Manually tracking deal pipeline in spreadsheets; missing market signals; slow underwriting turnaround."
+  kpis: ["deals_sourced_per_week", "underwrite_turnaround_hours", "portfolio_irr"]
+
+wholesaler:
+  tier: 1
+  priority: 5
+  role_terms: ["Acquisitions Manager", "Disposition Manager", "Wholesale Operator"]
+  problem_hypothesis: "Bottlenecked on disposition velocity; cash-buyer list is stale; cold-calling ROI is falling."
+  kpis: ["disposition_days", "cash_buyer_match_rate", "contracts_per_month"]
+
+property_manager:
+  tier: 1
+  priority: 6
+  role_terms: ["Owner", "President", "COO", "Director of Operations"]
+  problem_hypothesis: "Drowning in tenant comms; missing lease-renewal windows; maintenance triage is reactive."
+  kpis: ["tenant_response_time_hours", "renewal_capture_rate", "maintenance_sla_pct"]
+
+transaction_attorney:
+  tier: 2
+  priority: 7
+  role_terms: ["Real Estate Attorney", "Closing Attorney", "Partner"]
+  problem_hypothesis: "Drowning in title/closing coordination; manual doc review is slow; referral intake is ad-hoc."
+  kpis: ["closing_cycle_days", "doc_review_hours", "referral_conversion_rate"]
+
+business_attorney:
+  tier: 2
+  priority: 8
+  role_terms: ["Business Attorney", "Corporate Counsel", "Managing Partner"]
+  problem_hypothesis: "Firm needs AI-enabled intake/research but lacks internal engineering; partners want case-level automation."
+  kpis: ["intake_conversion_rate", "research_hours_saved", "matter_throughput"]
+
+developer:
+  tier: 3
+  priority: 9
+  role_terms: ["Developer", "Principal", "VP Development", "Head of Development"]
+  problem_hypothesis: "Entitlement/feasibility work is manual; multi-stakeholder comms fragmented; no AI layer on market intelligence."
+  kpis: ["feasibility_turnaround_days", "stakeholder_response_time_hours", "deal_margin"]

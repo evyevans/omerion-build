@@ -1,0 +1,36 @@
+{
+  "_note": "fit_score calculation lives in BackboneEngine.gs — these tables are read-only reference for documentation only",
+  "intent_score_signals": {
+    "email_open": 1,
+    "email_click": 3,
+    "email_reply": 10,
+    "linkedin_connection_accepted": 5,
+    "linkedin_reply": 10,
+    "meeting_booked": 20
+  },
+  "intent_decay": {
+    "recent_window_days": 30,
+    "old_signal_multiplier": 0.5
+  },
+  "model_pricing_usd_per_million_tokens": {
+    "claude-sonnet-4-6": {
+      "input": 3.00,
+      "output": 15.00
+    },
+    "claude-opus-4-7": {
+      "input": 15.00,
+      "output": 75.00
+    },
+    "claude-haiku-4-5": {
+      "input": 0.80,
+      "output": 4.00
+    }
+  },
+  "sentiment_action_map": {
+    "POSITIVE": "create_opportunity_and_schedule_call",
+    "WARM": "create_followup_task_14_days",
+    "NEUTRAL": "log_only",
+    "NEGATIVE": "opt_out_and_cancel_tasks",
+    "REFERRAL": "create_referral_contact_and_task"
+  }
+}

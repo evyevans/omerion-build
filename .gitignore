@@ -1,0 +1,76 @@
+# Core
+.env
+.env.local
+.env.*
+*.env
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Mac / OS
+.DS_Store
+
+# Build/Logs
+dist/
+build/
+*.log
+.next/
+coverage/
+cursor_inbox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Discord bot credentials
+discord/.env
+docker/discord-mcp.env
+docker/pinecone-mcp.env
+
+# MCP config (contains API keys — use .mcp.json.example for reference)
+.mcp.json
+
+# Secrets / credential artifacts
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+credentials.json
+service-account*.json
+# Match `kb-service-account.json` and any other `*-service-account*.json` form
+*service-account*.json
+secrets/
+
+# Railway CLI artifacts (should never be committed)
+/railway
+/railway_login*
+/.railway/
+
+# Local archive (Wave 0 cleanup moved historical audits here — not tracked)
+_archive/
+
+# Cursor IDE
+.cursor/
+
+# Local RSI/improvement scratch directory
+.improvement_proposals/
+
+# Dashboard local scratch scripts (not part of the production build)
+dashboard/check-supabase.*
+dashboard/remove_bg.py
+
+# Reference repositories cloned into the tree for context (each has its own
+# .git/ inside — they are NOT submodules of this repo and should never be
+# committed via the parent). Add new reference clones here.
+/awesome-claude-skills/
+/claude-code-memory-setup/
+/claude-mem/
+/token-savior/

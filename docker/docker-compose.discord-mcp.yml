@@ -1,0 +1,25 @@
+# Standalone MCP server for Discord integration.
+# Start: docker compose -f docker-compose.discord-mcp.yml up -d
+# Stop:  docker compose -f docker-compose.discord-mcp.yml down
+# Logs:  docker logs -f discord-mcp
+# MCP endpoint: http://localhost:8085/mcp
+
+services:
+  discord-mcp:
+    container_name: discord-mcp
+    # Pinned to immutable digest — update after auditing upstream releases.
+    # To refresh: docker pull saseq/discord-mcp:latest && docker inspect --format='{{index .RepoDigests 0}}' saseq/discord-mcp:latest
+    image: saseq/discord-mcp@sha256:c2b195a01c60d7a55bed38d153ba13302cfa7df7fdb98e4dc36c5846f5d4aa8c
+    restart: unless-stopped
+    ports:
+      # Loopback-only: ngrok tunnels from localhost, no need to expose on 0.0.0.0.
+      # The unauthenticated MCP endpoint must never be reachable from the LAN.
+      - "127.0.0.1:8085:8085"
+    env_file:
+      - discord-mcp.env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8085/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

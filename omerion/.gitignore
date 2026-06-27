@@ -1,0 +1,17 @@
+.env
+.env.local
+secrets/
+*.pyc
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.DS_Store
+node_modules/
+.claude_cache/
+/tmp/

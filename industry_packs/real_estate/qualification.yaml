@@ -1,0 +1,35 @@
+# Default qualification rules for the real_estate pack. Clients can
+# override per-rule via clients/<slug>/qualification.yaml.
+
+version: 1
+
+rules:
+  - id: tier1_persona
+    weight: 30
+    when: { lead.persona.in: [brokerage_owner, high_volume_agent, team_lead, investor, wholesaler, property_manager] }
+
+  - id: tier2_persona
+    weight: 18
+    when: { lead.persona.in: [transaction_attorney, business_attorney] }
+
+  - id: team_size_signal
+    weight: 20
+    when: { lead.company.team_size.gte: 5 }
+
+  - id: target_metro
+    weight: 15
+    when: { lead.company.metro.in: ["Greater Toronto Area", "Phoenix", "Dallas-Fort Worth", "South Florida", "Denver"] }
+
+  - id: no_modern_stack
+    weight: 12
+    when: { lead.company.tech_maturity.in: [unknown, none, legacy] }
+
+  - id: speed_to_lead_pain_signal
+    weight: 5
+    when: { lead.signals.contains_any: ["speed-to-lead", "follow-up gaps", "ISA"] }
+
+tiers:
+  A: ">=80"
+  B: "60..79"
+  C: "40..59"
+  reject: "<40"

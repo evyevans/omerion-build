@@ -1,0 +1,17 @@
+[Unit]
+Description=Omerion Agentic Backend
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/omerion/omerion
+EnvironmentFile=/root/omerion/omerion/.env
+ExecStart=/root/.local/bin/uv run uvicorn main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

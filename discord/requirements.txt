@@ -1,0 +1,9 @@
+# Omerion Discord bot — standalone deps
+# All are already present in the omerion/ venv; this file documents them
+# for cases where the bot is run in its own isolated environment.
+discord.py>=2.4.0
+httpx>=0.27.0
+supabase>=2.7.0
+python-dotenv>=1.0.0
+structlog>=24.4.0
+PyYAML>=6.0

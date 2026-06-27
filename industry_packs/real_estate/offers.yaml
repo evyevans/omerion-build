@@ -1,0 +1,52 @@
+# Real-estate consulting offer catalog. Migrated from agents.yaml.
+# Each offer maps to a problem + outcomes + best-fit personas.
+
+lead_velocity_system:
+  demo_reference: DAAM
+  problem: "Leads leaking due to slow speed-to-lead and fragmented follow-up."
+  outcomes: ["sub-60s speed-to-lead", "2x appointment-set rate", "unified inbox across SMS/email/DM"]
+  best_fit_personas: ["team_lead", "high_volume_agent", "brokerage_owner"]
+  price_band: { min: 5000, max: 15000 }
+  typical_timeline_weeks: 4
+
+team_operations_os:
+  demo_reference: ORIA
+  problem: "No shared ops layer for multi-agent team/brokerage; coaching and accountability are manual."
+  outcomes: ["centralized agent performance dashboard", "AI coaching nudges", "automated onboarding"]
+  best_fit_personas: ["brokerage_owner", "team_lead"]
+  price_band: { min: 15000, max: 40000 }
+  typical_timeline_weeks: 8
+
+portfolio_intelligence_stack:
+  demo_reference: RORA
+  problem: "Portfolio/deal intelligence is trapped in spreadsheets; market signals are delayed."
+  outcomes: ["live portfolio dashboard", "underwriting copilot", "market-signal alerts"]
+  best_fit_personas: ["investor", "developer", "property_manager"]
+  price_band: { min: 25000, max: 60000 }
+  typical_timeline_weeks: 10
+
+closing_acceleration_suite:
+  demo_reference: ASAP
+  problem: "Closing cycle too long; doc prep, title, and compliance checks are manual."
+  outcomes: ["AI-assisted doc review", "automated closing checklist", "title/attorney orchestration"]
+  best_fit_personas: ["transaction_attorney", "brokerage_owner", "wholesaler"]
+  price_band: { min: 15000, max: 35000 }
+  typical_timeline_weeks: 6
+
+demo_catalog:
+  DAAM:
+    name: "Dynamic AI Acquisition Machine"
+    one_liner: "Multi-channel lead capture + AI qualification + sub-minute routing."
+    proves: "speed-to-lead collapse, omnichannel unification"
+  ORIA:
+    name: "Operations & Recruiting Intelligence Assistant"
+    one_liner: "Agent performance analytics + AI coaching + recruiting pipeline."
+    proves: "team visibility and scalable coaching"
+  RORA:
+    name: "Real-estate Operations & Research Agent"
+    one_liner: "Deal pipeline, underwriting copilot, and market-intelligence feed."
+    proves: "investor/PM portfolio intelligence"
+  ASAP:
+    name: "Accelerated Sales & Administrative Pipeline"
+    one_liner: "Closing orchestration: doc prep, title, compliance, client portal."
+    proves: "closing cycle compression"

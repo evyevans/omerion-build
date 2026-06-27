@@ -1,0 +1,29 @@
+{
+  "company_types": [
+    "B2B SaaS Company",
+    "Digital Marketing Agency",
+    "Creative Agency",
+    "Management Consulting Firm",
+    "IT Services / MSP",
+    "Accounting / CPA Firm",
+    "Law Firm",
+    "Staffing / Recruiting Agency",
+    "E-Commerce / DTC Brand",
+    "Professional Services Firm",
+    "Healthcare Services",
+    "Financial Services Firm",
+    "Insurance Agency",
+    "Manufacturing Company",
+    "Logistics / Supply Chain",
+    "Construction / Trades Company",
+    "Education / EdTech",
+    "Hospitality / Restaurant Group",
+    "Nonprofit / Association",
+    "Media / Publishing Company",
+    "Fitness / Wellness Brand",
+    "Architecture / Engineering Firm",
+    "Venture-Backed Startup",
+    "Private Equity Portfolio Company",
+    "Family-Owned Business"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "omerion-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@dicebear/collection": "^9.4.2",
+    "@dicebear/core": "^9.4.2",
+    "@phosphor-icons/react": "^2.1.10",
+    "@supabase/supabase-js": "^2.103.3",
+    "@types/animejs": "^3.1.13",
+    "animejs": "^4.4.1",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
+    "jimp": "^1.6.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.10"
+  }
+}

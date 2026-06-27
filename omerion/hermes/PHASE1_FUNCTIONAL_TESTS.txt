@@ -1,0 +1,72 @@
+ARIES — Hermes Phase 1 functional test suite (2026-06-26)
+
+Run all 9 probes in order. For each probe: execute the tool calls, paste RAW output (IDs, URLs, JSON), then mark PASS or FAIL. Do not summarize until all 9 are done.
+
+Report format at end:
+Probe 1: PASS/FAIL — [key output]
+...
+Probe 9: PASS/FAIL — [key output]
+Overall: X/9 pass
+
+If bridge email returns 502, retry once before marking FAIL.
+
+═══════════════════════════════════════════════════════════════
+GOOGLE WORKSPACE (Probes 1–5)
+═══════════════════════════════════════════════════════════════
+
+PROBE 1 — Email round-trip
+1. email_send via Omerion bridge:
+   to: omerion.io@gmail.com
+   subject: Hermes live test
+   body: Phase 1 probe 1 — email round-trip verification.
+2. gmail_search query: subject:"Hermes live test"
+3. gmail_read_message on the message ID from search
+PASS if: message_id from send + full message body readable
+
+PROBE 2 — Calendar CRUD
+1. calendar_create_event: tomorrow, 15 min, title "Hermes calendar test", primary calendar
+2. calendar_list_events: next 7 days, show the new event
+3. calendar_delete_event: delete the event just created
+PASS if: create returns event ID, list shows it, delete succeeds
+
+PROBE 3 — Drive folder + upload
+1. drive_create_folder: name "Hermes-test-2026-06-26" (root or known parent)
+2. drive_upload_file: small text file "hermes-probe3.txt" content "probe 3 ok" into that folder
+3. drive_list_folder: confirm file ID appears
+PASS if: folder ID + file ID returned
+
+PROBE 4 — Docs create
+1. docs_create: title "Hermes doc test", body one paragraph "Phase 1 probe 4 — docs create verification."
+PASS if: Google Doc URL returned
+
+PROBE 5 — Sheets read + append
+1. sheets_read: one tab from a known spreadsheet (use SA-backed sheet from .env if configured)
+2. sheets_append: one row with columns [timestamp, "hermes-probe5", "ok"]
+PASS if: read returns rows + append succeeds
+
+═══════════════════════════════════════════════════════════════
+WEB (Probes 6–9)
+═══════════════════════════════════════════════════════════════
+
+PROBE 6 — SerpAPI search
+web_search query: "PropTech AI automation 2026"
+Return top 3 titles + URLs (raw)
+PASS if: 3 results with URLs
+
+PROBE 7 — Firecrawl scrape
+firecrawl_scrape: https://techcrunch.com (or any live news article URL)
+Return first 300 chars of markdown
+PASS if: status 200 + markdown content
+
+PROBE 8 — Firecrawl interact (single-page)
+1. firecrawl_scrape: https://www.google.com/search?q=hermes+mythology (or simple public page with input)
+2. firecrawl_interact: one action (fill search box or click) on scraped session
+PASS if: interact returns result without error (partial OK)
+
+PROBE 9 — Firecrawl agent (research)
+firecrawl_agent task: "Summarize the latest Stripe Connect pricing or fee structure changes in 2-3 sentences with one source URL."
+PASS if: agent returns summary + URL
+
+═══════════════════════════════════════════════════════════════
+END — Reply with X/9 and any FAIL details
+═══════════════════════════════════════════════════════════════

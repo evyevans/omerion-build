@@ -1,0 +1,71 @@
+ARIES — Phase 4: Install Playwright browser MCP on Hermes VPS
+
+Context: Firecrawl covers scrape/search/interact/agent. Playwright adds Perplexity-style multi-step browser navigation (navigate, click, type, submit across a session). npx v10.9.8 is available; Playwright/Chromium not yet installed.
+
+═══════════════════════════════════════════════════════════════
+STEP 1 — Install Chromium (one-time)
+═══════════════════════════════════════════════════════════════
+
+Run on VPS:
+  npx playwright install --with-deps chromium
+
+Confirm: chromium binary path exists, no install errors.
+
+═══════════════════════════════════════════════════════════════
+STEP 2 — Register Playwright MCP (headless)
+═══════════════════════════════════════════════════════════════
+
+Add to Hermes MCP server registry (alongside google + firecrawl):
+
+  name: playwright
+  command: npx
+  args: ["-y", "@playwright/mcp@latest", "--headless"]
+
+If stdio spawn fails from agent worker, run standalone HTTP transport instead:
+  npx @playwright/mcp@latest --headless --port 8931
+  Point MCP client to: http://127.0.0.1:8931/mcp
+
+Restart Hermes agent process after registration.
+
+═══════════════════════════════════════════════════════════════
+STEP 3 — Verification probes (paste raw output)
+═══════════════════════════════════════════════════════════════
+
+PROBE A — Tool discovery
+List all playwright MCP tool names (expect browser_navigate, browser_click, browser_type or equivalent per @playwright/mcp version).
+
+PROBE B — Navigate
+Navigate to https://example.com
+Return: page title
+
+PROBE C — Multi-step interaction
+Navigate to https://duckduckgo.com (or google.com if accessible)
+Type query: "Hermes Greek mythology"
+Submit search
+Return: first organic result title + URL
+
+PROBE D — Tier confirmation
+Confirm these tiers are documented in Hermes skill/memory:
+  Tier 1 READ: web_search (SerpAPI), firecrawl_scrape
+  Tier 2 SINGLE-PAGE ACT: firecrawl_interact (after scrape)
+  Tier 3 RESEARCH: firecrawl_agent (multi-site, Firecrawl-hosted)
+  Tier 4 FULL BROWSER: playwright MCP (multi-step UI, this install)
+
+Constraints to write into Hermes memory:
+- Prefer Firecrawl for read-only scrape (faster, cheaper)
+- Use firecrawl_agent for autonomous multi-site research
+- Use Playwright when multi-step click/type/navigation is required on arbitrary sites
+- Never log into sites without credentials explicitly in /data/.env
+- CAPTCHA or login wall → report BLOCKED, do not retry blindly
+
+═══════════════════════════════════════════════════════════════
+STEP 4 — Report back
+═══════════════════════════════════════════════════════════════
+
+□ Chromium installed: yes/no
+□ Playwright MCP registered: yes/no (stdio or HTTP port)
+□ Probe A tool list: [paste]
+□ Probe B title: [paste]
+□ Probe C first result: [paste]
+□ Hermes memory/skill updated with tier model: yes/no
+□ Agent process restarted: yes/no

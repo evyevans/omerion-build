@@ -1,0 +1,45 @@
+# .graphifyignore — Omerion codebase knowledge graph exclusions
+# Same syntax as .gitignore. Patterns apply from repo root.
+
+# Build & dependency artifacts
+dashboard/node_modules/
+dashboard/.next/
+dashboard/dist/
+dashboard/.turbo/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Generated / binary outputs
+graphify-out/
+*.parquet
+*.pkl
+*.h5
+
+# Secrets & config (never index)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+secrets/
+
+# Voluminous test fixtures
+omerion/tests/fixtures/large/
+**/test_data/*.json
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.cursor_inbox/
+.claude/settings.local.json

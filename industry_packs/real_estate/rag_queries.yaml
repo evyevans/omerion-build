@@ -1,0 +1,25 @@
+# RAG audit query templates for the real_estate pack. RAG_AUDITOR runs
+# these against the client's Pinecone namespace to estimate retrieval recall.
+
+icp_understanding:
+  - "What problems do brokerage owners running 10-60 agent teams typically face?"
+  - "How do high-volume agents handle follow-up at scale?"
+  - "What KPIs matter most to a team lead measuring agent ramp time?"
+
+offer_clarity:
+  - "Explain the difference between the lead velocity system and the team operations OS."
+  - "Which offer best fits a property manager drowning in tenant comms?"
+  - "What proof points are linked to the closing acceleration suite?"
+
+market_signals:
+  - "What was the most recent regulatory change affecting real estate brokers?"
+  - "Which proptech companies raised funding in the last quarter?"
+  - "What is the current sentiment around AI adoption in brokerages?"
+
+deal_intelligence:
+  - "How is underwriting turnaround time typically measured for residential investors?"
+  - "What inputs go into an ARV (after-repair-value) estimate?"
+
+closing_workflow:
+  - "What documents are typically required for a residential real estate closing in the US?"
+  - "What are common bottlenecks in the title company step?"

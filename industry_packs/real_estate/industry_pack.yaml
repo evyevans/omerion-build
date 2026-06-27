@@ -1,0 +1,19 @@
+name: real_estate
+version: 1.0.0
+description: >
+  Brokerages, teams, investors, wholesalers, property managers, transaction
+  attorneys, business attorneys, developers. Sub-60s speed-to-lead and
+  multi-channel orchestration are the headline outcomes.
+
+# Agents that universally exist for any vertical are NOT listed here;
+# they are auto-enabled by `scope: universal`. Vertical-specific agents
+# (deal_underwriter, transaction_timeline, etc.) live in agents/ and are
+# enabled here.
+agents_enabled: []
+
+prompt_overlays: {}
+
+tool_overrides:
+  crm: google_sheets
+  email: gmail
+  calendar: google

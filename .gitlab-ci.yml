@@ -1,0 +1,50 @@
+stages:
+  - check
+  - deploy
+
+# Fix #11: WAT compliance + template drift gates.
+wat_compliance:
+  stage: check
+  image: python:3.12-slim
+  before_script:
+    - pip install --no-cache-dir uv
+    - uv sync --frozen || uv sync
+  script:
+    - uv run python scripts/check_wat.py
+    - uv run python scripts/check_template_drift.py
+  only:
+    - main
+    - merge_requests
+
+deploy_to_vps:
+  stage: deploy
+  image: alpine:latest
+  only:
+    - main
+  before_script:
+    - apk add --update openssh-client
+    - eval $(ssh-agent -s)
+    - |
+      if [ -z "$SSH_PRIVATE_KEY" ]; then
+        echo "🚨 ERROR: The SSH_PRIVATE_KEY variable is completely empty! 🚨"
+        echo "GitLab is hiding it because of the 'Protect variable' setting."
+        echo "Go to Settings > CI/CD > Variables, edit SSH_PRIVATE_KEY, and UNCHECK 'Protect variable'."
+        exit 1
+      fi
+    - echo "$SSH_PRIVATE_KEY" | base64 -d | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H "$VPS_IP" >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - |
+      ssh -o StrictHostKeyChecking=no root@$VPS_IP "
+        mkdir -p /root/omerion &&
+        cd /root/omerion &&
+        if [ -d '.git' ]; then git pull origin main; else git clone git@gitlab.com:evy-omerion/omerion-agents.git .; fi &&
+        which uv || curl -LsSf https://astral.sh/uv/install.sh | sh &&
+        export PATH=\$HOME/.local/bin:\$PATH &&
+        uv sync &&
+        systemctl restart omerion || echo 'omerion service not set up' &&
+        systemctl restart omerion-discord || echo 'omerion-discord service not set up'
+      "

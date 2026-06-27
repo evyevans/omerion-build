@@ -1,0 +1,762 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Omerion Agent Configuration — General Industry AI Automation Agency
+#
+# Per-agent variables consumed at runtime by every agent. Omerion builds
+# custom AI automation systems for operations leaders, founders, revenue
+# teams, agencies, SaaS companies, e-commerce operators, professional
+# services firms, and HR/finance teams — any industry.
+#
+# The four internal systems (DAAM / ORIA / RORA / ASAP) are live demos
+# we reference on discovery calls to prove each pattern at production scale.
+#
+# First-persona focus: SME Founder + Operations Leader (highest weights).
+# ═══════════════════════════════════════════════════════════════════════
+
+global:
+  hitl_escalation_minutes: 60
+  hitl_max_regeneration_retries: 3
+  telemetry_flush_interval_seconds: 30
+  default_rate_limit_backoff_seconds: [4, 15, 60]
+
+# (Removed 2026-06-15: the `mcp_integrations.discord` block was dead config —
+#  referenced by zero Python. Discord I/O happens via webhooks in
+#  omerion_core/activity_logger.py + inbound/discord_route.py. Runtime is
+#  LangGraph-only; no MCP server is mounted.)
+
+# ─── Shared persona taxonomy (9 personas, 3 tiers) ─────────────────────
+# Used by market_mapper, lead_enricher, icp_scoring, offer_matching,
+# linkedin_outreach, outcome_attribution. Edit in one place only.
+personas:
+  # Tier 1 — core ICP
+  ops_leader:
+    tier: 1
+    priority: 1
+    archetype: "system_multiplier"
+    role_terms: ["COO", "VP Operations", "Director of Operations", "Head of Ops", "Operations Manager"]
+    problem_hypothesis: "running manual processes across 10-100 person org; no shared automation layer; reporting takes days not minutes"
+    kpis: ["process_cycle_time_days", "automation_adoption_rate", "manual_task_reduction_pct"]
+  revenue_leader:
+    tier: 1
+    priority: 2
+    archetype: "high_velocity"
+    role_terms: ["VP Sales", "Head of Revenue", "CRO", "Sales Director", "Revenue Operations Lead"]
+    problem_hypothesis: "pipeline visibility is poor; speed-to-lead is slow; reps spend 60%+ of time on non-selling tasks"
+    kpis: ["speed_to_lead_minutes", "pipeline_conversion_rate", "revenue_per_rep"]
+  sme_founder:
+    tier: 1
+    priority: 3
+    archetype: "system_multiplier"
+    role_terms: ["CEO", "Founder", "Co-Founder", "Owner", "Managing Director"]
+    problem_hypothesis: "personally in the weeds on ops; can't delegate without losing quality; growth is capped by owner bandwidth"
+    kpis: ["owner_hours_saved_weekly", "revenue_growth_rate", "customer_acquisition_cost"]
+  agency_owner:
+    tier: 1
+    priority: 4
+    archetype: "system_multiplier"
+    role_terms: ["Agency Owner", "Founder", "CEO", "Managing Partner", "Principal"]
+    problem_hypothesis: "client delivery is labor-intensive; margins erode as headcount scales; no repeatable AI-augmented delivery playbook"
+    kpis: ["project_margin_pct", "client_retention_rate", "deliverable_cycle_days"]
+  ecommerce_operator:
+    tier: 1
+    priority: 5
+    archetype: "high_velocity"
+    role_terms: ["Head of E-commerce", "DTC Founder", "VP Growth", "Director of Digital", "Shopify/Amazon Operator"]
+    problem_hypothesis: "abandoned cart recovery is manual; customer support is reactive; ad spend attribution is blind"
+    kpis: ["cart_recovery_rate", "avg_order_value", "return_rate_pct"]
+  # Tier 2 — professional services buyers
+  professional_services_owner:
+    tier: 2
+    priority: 6
+    archetype: "capital_allocator"
+    role_terms: ["Managing Partner", "Principal", "Director", "Practice Lead", "Owner"]
+    problem_hypothesis: "billable hours consumed by intake, research, and admin; client onboarding is slow; no AI layer on knowledge management"
+    kpis: ["billable_hours_saved", "client_onboarding_days", "matter_throughput"]
+  saas_founder:
+    tier: 2
+    priority: 7
+    archetype: "system_multiplier"
+    role_terms: ["CEO", "CTO", "Founder", "Head of Product", "VP Engineering"]
+    problem_hypothesis: "churn is above 5%; activation funnel is leaking; support tickets are a growth blocker"
+    kpis: ["churn_rate", "activation_rate", "support_ticket_resolution_hours"]
+  # Tier 3 — talent & finance
+  hr_talent_leader:
+    tier: 3
+    priority: 8
+    archetype: "system_multiplier"
+    role_terms: ["VP People", "Head of Talent", "Recruiting Director", "CHRO", "People Operations Lead"]
+    problem_hypothesis: "time-to-hire is 45+ days; offer acceptance is under 70%; retention programs are generic"
+    kpis: ["time_to_hire_days", "offer_acceptance_rate", "retention_rate"]
+  finance_ops:
+    tier: 3
+    priority: 9
+    archetype: "system_multiplier"
+    role_terms: ["CFO", "Controller", "VP Finance", "Finance Director", "Head of Finance"]
+    problem_hypothesis: "month-end close takes 7+ days; reconciliation is manual; financial reporting is reactive not predictive"
+    kpis: ["close_cycle_days", "reconciliation_hours_saved", "report_turnaround_hours"]
+
+# ─── Consulting offer packages ────────────────────────────────────────
+# Each package resolves a specific business problem; demo_reference is the
+# live running system we show on discovery calls to prove the pattern.
+offer_packages:
+  revenue_acceleration_engine:
+    demo_reference: DAAM
+    target_archetype: "high_velocity"
+    problem: "leads leaking due to slow speed-to-lead and fragmented follow-up across channels"
+    outcomes: ["sub-60s speed-to-lead", "2x appointment-set rate", "unified inbox across SMS/email/DM"]
+    price_band: { min: 5000, max: 15000 }
+    typical_timeline_weeks: 4
+  ops_intelligence_layer:
+    demo_reference: CAPA
+    target_archetype: "system_multiplier"
+    problem: "executives wasting time manually updating CRMs and managing calendars"
+    outcomes: ["voice-driven CRM updates", "autonomous calendar conflict resolution", "instant email drafting"]
+    price_band: { min: 15000, max: 40000 }
+    typical_timeline_weeks: 8
+  research_decision_stack:
+    demo_reference: REMI
+    target_archetype: "capital_allocator"
+    problem: "strategic research and real estate market intelligence trapped in slow manual processes"
+    outcomes: ["overnight full market analysis", "24/7 auto-scouting", "ranked decision briefs"]
+    price_band: { min: 25000, max: 60000 }
+    typical_timeline_weeks: 10
+  process_automation_suite:
+    demo_reference: ASAP
+    target_archetype: "system_multiplier"
+    problem: "high-volume repetitive processes lacking closed-loop accountability to revenue targets"
+    outcomes: ["revenue target reverse-engineering", "automated workflow orchestration", "compliance and QA automation"]
+    price_band: { min: 15000, max: 35000 }
+    typical_timeline_weeks: 6
+
+# ─── Demo catalog (live systems referenced on calls) ───────────────────
+demo_catalog:
+  DAAM:
+    name: "Document Automated AI Manager"
+    one_liner: "Multi-agent app for documentation, SLA enforcement, and human-in-loop signing."
+    proves: "speed-to-lead collapse, deal pipeline automation"
+  REMI:
+    name: "Real Estate Market Intelligence"
+    one_liner: "Voice assistant, overnight market insights, and predictive deal scouting."
+    proves: "strategic intelligence and investment yield automation"
+  CAPA:
+    name: "Conversational AI Personal Assistant"
+    one_liner: "Voice-command executive agent that updates CRM and resolves calendar conflicts."
+    proves: "executive time multiplication and ops dashboarding"
+  ASAP:
+    name: "Automated Success AI Planner"
+    one_liner: "Orchestration engine that reverse-engineers revenue targets into exact appointments."
+    proves: "delivery cycle compression and process automation"
+
+# ─── Agent #1 — Market Mapper ──────────────────────────────────────────
+market_mapper:
+  # ── Trigger (TWATR-T): weekly autonomous discovery via the runtime scheduler
+  # (lifecycle path, NOT skill-frontmatter direct-dispatch) + on-demand inline calls
+  # from the enricher (market_search intent).
+  schedule:
+    enabled: true
+    cron: "0 6 * * 1"           # 06:00 Mondays America/Toronto — weekly account discovery
+  # ── Cognition (TWATR-A): per-account Haiku persona classify + deterministic rank.
+  # No HITL — accounts are companies, not people (the G2 gate is downstream in the
+  # enricher's contact writes).
+  cognition:
+    engine: claude_router_single_shot
+    tier: fast
+  target_industries:
+    - Digital Marketing & Advertising
+    - SaaS & B2B Software
+    - Professional Services (Legal, Accounting, Consulting)
+    - E-commerce & DTC Brands
+    - Staffing & HR Firms
+  data_sources:
+    - Apollo.io (company + contact enrichment)
+    - Crunchbase (funding signals and company metadata)
+    - LinkedIn Sales Navigator
+    - Google Maps Places API
+    - industry association directories
+  account_score_weights:
+    volume: 0.35
+    persona_fit: 0.45
+    tech_maturity: 0.20
+  min_volume_threshold: 50
+  min_team_size: 3
+  min_final_score: 0.0   # Minimum final_score to qualify when structured data is present
+  refresh_cadence_days: 7
+  persona_tier_priority: [1, 2, 3]   # tier-1 personas harvested first
+
+# ─── Agent #2 — High-Quality Lead Scraping ─────────────────────────────
+high_quality_lead_scraping:
+  max_accounts_per_cycle: 15
+  min_research_depth: 3
+  # ── Trigger (TWATR-T): reactive #leads + proactive daily cron ──
+  # The cron is registered in omerion_core/runtime/scheduler.py and goes through
+  # the full run lifecycle (create_run → execute_run), NOT a direct handler call,
+  # so HITL pause/resume + cost watchdog apply exactly as for a Discord run.
+  schedule:
+    enabled: true
+    cron: "0 9 * * *"          # 09:00 America/Toronto — proactive priority-account research
+  # ── Cognition (TWATR-A): one autonomous tool-use loop (cognition.py) ──
+  # Engine is ClaudeRouter tool-use (no Claude CLI dependency); swappable to
+  # claude-agent-sdk later behind the same research_account() interface.
+  cognition:
+    engine: claude_router_tool_loop
+    tier: heavy
+    max_turns: 10
+  # ── RAG (TWATR-R): semantic dedup against the `dossiers` namespace ──
+  dedup:
+    namespace: dossiers
+    hard_skip: 0.96            # ≥ → already dossiered elsewhere; skip persist
+    soft_flag: 0.90            # ≥ (and < hard) → flag for founder in the HITL card
+  quality_flags:
+    - founder-led
+    - tech-forward
+    - actively-hiring
+    - recently-expanded
+    - recently-funded
+    - growing-team
+  disqualification_flags:
+    - retiring
+    - inactive
+    - already-client
+    - recent-acquisition
+  research_targets:
+    - headcount_growth_last_6mo
+    - recent_funding_or_press
+    - tech_stack_fingerprint
+    - hiring_signals
+    - recent_product_or_service_launch
+  dossier_template_fields:
+    - summary
+    - track_record
+    - current_niche
+    - pain_signals
+    - outreach_angle
+    - conversation_hooks
+    - offer_match
+
+# ─── Agent #3 — Lead Scraper & Enricher ────────────────────────────────
+lead_scraper_enricher:
+  max_contacts_per_account: 3
+  enrichment_provider_priority:
+    - hunter        # only Hunter.io is wired today (apollo/clearbit not implemented)
+  dedup_fields:
+    - email
+    - linkedin_url
+    - "name+domain"
+  # ── Trigger (TWATR-T): event-driven (account.batch.ready from MAP) + reactive #scout.
+  # No cron — enrichment is demand-driven by upstream discovery.
+  # ── Cognition (TWATR-A): one autonomous tool-use loop per account (cognition.py).
+  cognition:
+    engine: claude_router_tool_loop
+    tier: default          # Sonnet — filter real contacts + classify + verify emails
+    max_turns: 8
+  # role_terms and problem_hypothesis are sourced from top-level `personas`.
+  # Override here only if a persona needs a per-enrichment-step adjustment.
+
+# ─── Agent #4 — LinkedIn Cold & Warm Outreach ──────────────────────────
+linkedin_outreach:
+  # RAG decision (Wave-RAG): Pinecone NONE — Supabase-sufficient. "Best template
+  # per persona by reply/acceptance rate" is an exact GROUP BY (template, persona)
+  # aggregation over discrete enumerated templates, not a semantic-similarity query.
+  # The proposed `linkedin_signals` namespace stays design-only/deferred until
+  # free-form message generation (not templated sequences) would need semantic recall.
+  rag_decision: pinecone_none_supabase_sufficient
+  daily_connection_limit: 25
+  daily_message_limit: 40
+  warm_contact_threshold:
+    email_reply: true
+    event_attended: true
+    mutual_engagement: true
+  # Nine persona variants mapped to new general ICP. Templates live in
+  # agents/linkedin_outreach/templates/ keyed by `{persona}_{variant}`.
+  persona_variants:
+    - ops_leader
+    - revenue_leader
+    - sme_founder
+    - agency_owner
+    - ecommerce_operator
+    - professional_services_owner
+    - saas_founder
+    - hr_talent_leader
+    - finance_ops
+  cold_sequence_steps:
+    - { day: 0, type: connection_request, template: "{persona}_cold_connection_v1" }
+    - { day: 3, type: dm, template: "{persona}_cold_followup_hook_v1" }
+    - { day: 7, type: dm, template: "{persona}_cold_case_study_v1" }
+  warm_sequence_steps:
+    - { day: 0, type: dm, template: "{persona}_warm_reopen_v1" }
+    - { day: 4, type: dm, template: "{persona}_warm_offer_v1" }
+  personalization_fields:
+    - first_name
+    - company
+    - pain_signal
+    - industry
+    - outreach_hook
+    - persona_variant
+  stop_conditions:
+    - meeting_booked
+    - explicit_no
+    - replied
+    - do_not_contact
+
+# ─── Agent #5 — CRM Warm Leads Nurture ─────────────────────────────────
+crm_nurture:
+  # ── Trigger (TWATR-T): event (contact.scored) + reactive #nurture + daily cron sweep.
+  # The cron is registered in omerion_core/runtime/scheduler.py through the full run
+  # lifecycle (create_run → execute_run), so the G1 send-gate + cost watchdog apply.
+  schedule:
+    enabled: true
+    cron: "0 13 * * *"         # 13:00 America/Toronto — daily nurture sweep of due contacts
+  # ── Cognition (TWATR-A): single-shot Sonnet draft (persona-mapped, style-guarded,
+  # RAG winning-angle injected). Drafting is inherently single-shot; deterministic
+  # cooldown/stop-condition gates stay in Python (hard rules, not model discretion).
+  cognition:
+    engine: claude_router_single_shot
+    tier: default
+  lead_stages:
+    - new_lead
+    - contacted
+    - engaged
+    - proposal_sent
+    - meeting_booked
+    - won
+    - lost
+  cooldown_periods:
+    new_lead: 2
+    contacted: 4
+    engaged: 3
+    proposal_sent: 5
+  stop_conditions:
+    - meeting_booked
+    - explicit_no
+    - signed_agreement
+    - do_not_contact
+  escalation_threshold:
+    opens_in_24h: 3
+    link_clicks: 1
+  content_pillars:
+    - ai_automation_case_studies
+    - consulting_case_studies
+    - workflow_automation_primers
+    - prompt_engineering_tips
+    - demo_walkthroughs
+  personalization_fields:
+    - first_name
+    - persona
+    - pain_signal
+    - industry
+    - last_touch_reference
+  # ── Ghost follow-up sequences (steps 4-5, triggered after initial sequence exhausted) ──
+  ghost_threshold_days: 21
+  max_sequence_steps: 5
+  ghost_followup_sequence:
+    - { step: 4, channel: email, angle: "case_study",  template: "{persona}_ghost_case_study_v1", delay_days: 7 }
+    - { step: 5, channel: sms,   angle: "break_up",    template: "{persona}_ghost_breakup_v1",    delay_days: 7 }
+  # ── RAG Traction — Pinecone outreach_signals flywheel ──────────────────
+  rag_enabled: true
+  rag_namespace: outreach_signals
+  rag_top_k: 5
+  rag_min_similarity: 0.72
+
+# ─── Agent #6 — ICP Fit & "Why Now" Scoring ────────────────────────────
+icp_scoring:
+  # Jobs×Tate framework — Fit / Intent / Timing.
+  fit_weights:
+    persona_tier: 0.30
+    deal_volume: 0.20          # MUST match the sub-score key compute_fit() emits.
+    role_seniority: 0.20       # Prior key `company_size` resolved to 0.0 via
+    tech_maturity: 0.15        # sub.get(k, 0.0) — silently dead-weighting 20% of
+    team_size: 0.15            # Fit and capping every contact's Fit at 0.80.
+  intent_weights:
+    semantic_pain_match: 0.40
+    engagement_recency: 0.30
+    engagement_volume: 0.30
+  timing_weights:
+    days_since_last_touch: 0.50
+    stage_velocity: 0.30
+    deal_age: 0.20
+  final_weights:
+    high_velocity:               { fit: 0.40, intent: 0.45, timing: 0.15 }
+    system_multiplier:           { fit: 0.55, intent: 0.25, timing: 0.20 }
+    capital_allocator:           { fit: 0.50, intent: 0.30, timing: 0.20 }
+    default:                     { fit: 0.40, intent: 0.35, timing: 0.25 }
+  score_segments:
+    hot: 0.75
+    warm: 0.50
+    watchlist: 0.30
+  # rag_query_templates moved to Obsidian vault:
+  # revenue/icp-scoring/rag-query-templates.md (canonical source of truth)
+  # mcp-icp-scoring reads from vault at startup. No fallback here — vault
+  # unavailability at boot is a hard error; stale agents.yaml is worse.
+  max_shortlist_size: 15
+
+# ─── Agent #7 — Offer Matching & Playbook ──────────────────────────────
+offer_matching:
+  rag_similarity_threshold: 0.78
+  # Pricing bands moved to top-level `offer_packages[*].price_band`.
+  # Agent reads packages from there; no duplication.
+
+# ─── Agent #8 — Meeting Intelligence & Blueprint ───────────────────────
+
+# ─── Agent #9 — Build Orchestrator ─────────────────────────────────────
+build_orchestrator:
+  # ── Trigger (TWATR-T): event-driven (blueprint.approved / rd_proposal.approved)
+  # + reactive #orch. No cron — builds are demand-driven by upstream approvals.
+  # ── Cognition (TWATR-A): single-shot Opus blueprint→TaskSpec[] decompose, then a
+  # deterministic topological sort. The orchestrator's real work is deterministic
+  # external-pipeline driving (Cursor: issue→branch→inject→poll→CI), NOT an LLM loop.
+  # ── HITL (TWATR): gate G3 (deploy/infra) sits BEFORE merge_tasks — merge-to-main is
+  # the deploy trigger, so the founder approves before anything ships. merge_pr also
+  # requires an automated VALIDATOR approval (second guard).
+  cognition:
+    engine: claude_router_single_shot
+    tier: heavy
+  # Dual mode: internal-OS work vs. client-deliverable work. Client mode
+  # drops artifacts into Google Docs inside a per-client Drive folder.
+  modes: ["internal", "client"]
+  branching_convention: "feat/{mode}/{client_slug}/{task_slug}"
+  ci_poll_interval_seconds: 30
+  client_deliverables:
+    root_drive_folder_env: "GOOGLE_CLIENT_DELIVERABLES_FOLDER_ID"
+    per_client_subfolder_template: "{client_slug}"
+    doc_types: ["proposal", "sow", "blueprint", "weekly_update", "handoff"]
+  task_granularity_guidelines:
+    max_files_changed: 8
+    max_logical_units: 1
+    must_have_acceptance_criteria: true
+
+# ─── Agent #11 — BUILDER (Autonomous Code Executor) ────────────────────────
+
+# ─── Agent #16 — CLIENT ONBOARDING ─────────────────────────────────────
+
+# ─── Agent #16/RSI — HEALER (Autonomous Remediation) ───────────────────
+
+# ─── Agent #16 — VALIDATOR (PR QA gatekeeper) ──────────────────────────
+
+# ─── Agent #18 — DEPLOYER (Infrastructure Provisioner) ─────────────────
+
+# ─── QA_TESTER (Agent #32) — Build Quality Gate ────────────────────────
+# (Promoted to top-level 2026-06-15: was nested under biz_dev_outreach, so
+#  settings.agent("qa_tester") returned only the global block — config unreachable.)
+
+# ─── COMPLIANCE_CHECKER (Agent #33) — Business Rule Enforcement ─────────
+compliance_checker:
+  triggers:
+    - cron
+    - event:client.onboarded
+    - event:deployment.live
+  schedule:
+    cron: "0 1 * * *"   # 01:00 America/Toronto nightly
+  cognition:
+    engine: deterministic_with_weekly_llm_report
+    tier: default
+  scan_window_hours: 24
+  data_retention_days: 90
+  weekly_report_day: 0   # 0 = Monday
+
+# ─── SECURITY_AUDITOR (Agent #34) — Proactive Security Scanning ─────────
+security_auditor:
+  triggers:
+    - cron
+    - event:deployment.live
+  schedule:
+    cron: "30 0 * * *"   # 00:30 America/Toronto nightly
+  cognition:
+    engine: deterministic_with_weekly_llm_brief
+    tier: default
+  weekly_report_day: 0   # 0 = Monday
+
+# ─── Agent #10 — Outcome Attribution & Feedback ────────────────────────
+  # KPI definitions now sourced from top-level `personas[*].kpis`.
+
+# ─── Agent R1 — Market/Tech Watcher ────────────────────────────────────
+
+# ─── Agent R2 — Open-Source Scout & Reverse-Engineer ───────────────────
+r2_oss_scout:
+  # ── Trigger (TWATR-T): managed_agent_cron + event rd.insight.created (R1). The
+  # insight now SEEDS discovery (focuses the GitHub search on R1's signal); cron
+  # runs fall back to the static search_tags below.
+  # ── Cognition (TWATR-A): per-repo rubric scoring — Haiku base (Tier.FAST), escalate
+  # to Sonnet (Tier.DEFAULT) only when risk>0.5. No HITL (internal R&D data).
+  # No semantic dedup needed — repo_url is a canonical key (unlike R1's multi-URL stories).
+  cognition:
+    engine: claude_router_tiered
+    base_tier: fast
+    escalation_tier: default
+    escalation_risk_threshold: 0.5
+  min_stars: 150
+  search_tags:
+    - agent orchestration
+    - RAG
+    - workflow automation
+    - AI process automation
+    - LangGraph
+    - webhook integrations
+    - document processing AI
+    - data extraction automation
+  integration_type_options:
+    - component
+    - pattern
+    - full_module
+    - reference_only
+
+# ─── Agent R3 — Strategic Workflow Architect ───────────────────────────
+r3_strategic_architect:
+  # ── Trigger (TWATR-T): managed_agent_cron (primary) + batch/sparse events
+  # (analysis.ready, dossier.ready, attribution.report.ready). NOT the per-item
+  # rd.insight.created / oss.candidate.scored — R3 synthesizes, it doesn't react.
+  # ── Cognition (TWATR-A): single-shot OPUS multi-source synthesis over a 14-day
+  # signal window → DesignProposal[]. No collapse needed.
+  # ── HITL: founder approves EVERY proposal before RD_PROPOSAL_SUBMITTED → build
+  # pipeline (gate-all; replay-idempotent). Not a G1-G4 gate — a roadmap approval.
+  cognition:
+    engine: claude_router_single_shot
+    tier: heavy
+  lookback_days: 14
+  prioritization_axes:
+    impact: [low, medium, high]
+    effort: [S, M, L, XL]
+  synthesis_buckets:
+    - consulting_service_ideas
+    - general_industry_insights
+    - internal_os_improvements
+  # ── RAG (added Wave-RAG): semantic memory of SHAPE's own decided proposals.
+  # Lets R3 recall approved precedent + avoid re-proposing rejected ideas.
+  pinecone:
+    namespace: intelligence_r3          # single index omerion-legion-rag, cosine
+    department: intelligence
+    embed_source: "title + problem_statement + hypothesis"
+    retrieval_threshold: 0.80           # wider net for few-shot recall
+    dedup_soft: 0.90                    # is_apparent_duplicate=true
+    dedup_hard: 0.96                    # silent skip
+    top_k: 3                            # policy cap; rerank if cross-encoder added
+    writer: omerion/agents/r3_strategic_architect/signals.py
+  token_budget: 1400                    # total per-run context tokens
+  obsidian:
+    vault_dir: obsidian-vault/r3-strategic-architect
+    files:
+      - signal-synthesis-guide.md       # ## Approved Patterns = write-back loop
+      - proposal-dedup-policy.md        # retrieval vs dedup thresholds
+      - rice-formula.md
+      - proposal-templates.md
+      - module-package-mapping.md
+    section_token_cap: 400
+
+# ─── Agent R4 — Evaluation & Telemetry ─────────────────────────────────
+r4_evaluation_telemetry:
+  comparison_window_days: 14
+  regression_thresholds:
+    latency_p95_ms: 15000
+    cost_per_run_usd: 2.00
+    success_rate: 0.90
+  alert_channels:
+    - log
+    - discord
+
+# ─── Agent #19 — AUDITOR — Constitutional Guardian (RSI Department) ──────────
+
+# ─── Agent BIZ DEV OUTREACH — finds consulting clients via freelance/postings ──
+biz_dev_outreach:
+  # ─── Run-level controls ──────────────────────────────────────────────
+  target_platforms:
+    # Tier S — invite-only / curated
+    - toptal
+    - ateam
+    - braintrust
+    - contra
+    # Tier A — high-signal startup / growth-stage employer boards
+    - wellfound
+    - yc
+    - lever
+    - greenhouse
+    # Tier B — volume freelance + general boards
+    - upwork
+    - linkedin_jobs
+    - indeed
+  max_postings_per_platform: 15
+  min_relevance_score: 0.65
+  min_rank_score: 7.0
+  top_n_to_draft: 5
+  ghost_threshold_days: 14
+  daily_application_cap: 3
+  hitl_required: true
+  discord_channel: seek
+  resume_path: "assets/evykynn/resume.md"
+  cover_letter_path: "assets/evykynn/cover_letter.md"
+
+  # ─── Persona / specialty signals fed to RANK_SYSTEM ──────────────────
+  target_categories:
+    - AI automation consulting
+    - LangGraph / multi-agent systems
+    - Freelance AI engineering
+    - Business process automation
+    - Conversational revenue systems
+    - Claude API implementation
+
+  # ─── Auto-skip + flag config ─────────────────────────────────────────
+  forbidden_company_keywords:
+    - "MLM"
+    - "crypto giveaway"
+    - "guaranteed income"
+    - "passive income system"
+    - "make money fast"
+
+  flag_thresholds:
+    low_rank_score: 7.5
+    short_deadline_days: 7
+    duplicate_company_days: 30
+    identical_cover_overlap: 0.70
+
+  # ─── Sources, grouped by signal tier ─────────────────────────────────
+  sources:
+    tier_s_invite_only:
+      toptal_rss:
+        - "https://www.toptal.com/freelance-jobs/feed?category=ai-engineer"
+        - "https://www.toptal.com/freelance-jobs/feed?category=python-developer"
+      ateam_rss:
+        - "https://a.team/missions/feed?category=ai-ml"
+      braintrust_rss:
+        - "https://app.usebraintrust.com/jobs/feed?role=ai-engineer"
+      contra_rss:
+        - "https://contra.com/explore/feed?category=ai"
+
+    tier_a_high_signal:
+      wellfound_search_urls:
+        - "https://wellfound.com/jobs?keywords=ai+automation+consultant"
+        - "https://wellfound.com/jobs?keywords=langgraph+agent"
+        - "https://wellfound.com/jobs?keywords=ai+workflow+automation"
+      yc_work_at_startup:
+        - "https://www.workatastartup.com/jobs?role=ml&jobType=contract"
+      growth_stage_ats_boards:
+        - { kind: lever,      slug: notion }
+        - { kind: lever,      slug: linear }
+        - { kind: greenhouse, slug: zapier }
+        - { kind: greenhouse, slug: make }
+        - { kind: greenhouse, slug: retool }
+        - { kind: greenhouse, slug: airtable }
+
+    tier_b_volume:
+      upwork_rss_feeds:
+        - "https://www.upwork.com/ab/feed/jobs/rss?q=AI+consulting+automation&sort=recency"
+        - "https://www.upwork.com/ab/feed/jobs/rss?q=LangGraph+agent&sort=recency"
+        - "https://www.upwork.com/ab/feed/jobs/rss?q=AI+workflow+automation&sort=recency"
+        - "https://www.upwork.com/ab/feed/jobs/rss?q=Claude+API+consultant&sort=recency"
+      indeed_rss_feeds:
+        - "https://www.indeed.com/rss?q=AI+consultant+automation&sort=date"
+        - "https://www.indeed.com/rss?q=LangGraph+consultant&sort=date"
+        - "https://www.indeed.com/rss?q=Claude+API+contractor&sort=date"
+      linkedin_search_urls:
+        - "https://www.linkedin.com/jobs/search/?keywords=AI+automation+consultant&sortBy=DD&f_WT=2"
+        - "https://www.linkedin.com/jobs/search/?keywords=AI+workflow+automation+contract&sortBy=DD&f_WT=2"
+        - "https://www.linkedin.com/jobs/search/?keywords=LangGraph+contract&sortBy=DD&f_WT=2"
+      # Google Jobs via SerpAPI — aggregates Indeed, LinkedIn, Glassdoor, ZipRecruiter
+      # and company career pages. `date_posted:week` chip is applied automatically.
+      google_jobs_queries:
+        - "AI automation consultant remote contract"
+        - "LangGraph agent developer contract"
+        - "AI workflow automation consultant freelance"
+        - "Claude API AI automation consultant remote"
+        - "business process automation AI freelance"
+
+    cold_outreach_person_sources:
+      linkedin_sales_nav_urls:
+        - "https://www.linkedin.com/sales/search/people?keywords=founder+AI+automation"
+        - "https://www.linkedin.com/sales/search/people?keywords=operations+leader+AI"
+      techcrunch_url: "https://techcrunch.com/category/artificial-intelligence/"
+      saastr_url: "https://www.saastr.com/"
+
+  # ─── Competitive Intelligence ────────────────────────────────────────
+  competitive_intel:
+    competitors:
+      - slug: "make"
+        name: "Make (formerly Integromat)"
+        feeds:
+          - url: "https://www.make.com/en/blog/feed"
+            label: "Make Blog"
+      - slug: "zapier"
+        name: "Zapier"
+        feeds:
+          - url: "https://zapier.com/blog/feeds/latest/"
+            label: "Zapier Blog"
+      - slug: "relevanceai"
+        name: "Relevance AI"
+        feeds:
+          - url: "https://relevanceai.com/blog/feed"
+            label: "Relevance AI Blog"
+
+  # ─── HEALER (RSI Agent #16) ──────────────────────────────────────────
+  healer:
+    # Metric thresholds above which a config_patch auto-applies without HITL
+    auto_patch_thresholds:
+      error_rate: 0.30          # 30%+ error rate -> auto-patch backoff
+      latency_p95_ms: 30000     # 30s p95 -> auto-patch timeout
+    # Safety ceilings HEALER may never write above
+    max_allowed_backoff_seconds: 600
+    max_allowed_timeout_seconds: 120
+    # LangSmith project name (leave empty to skip trace pull)
+    langsmith_project: ""
+    model_tier: SONNET
+
+  # ─── DEPLOYER (Agentic Factory Agent #18) ───────────────────────────
+  deployer:
+    railway_service_id: ""          # set via RAILWAY_SERVICE_ID env var
+    smoke_test_timeout_s: 60
+    health_path: "/api/v1/health"
+    rollback_on_failure: true
+
+  # ─── QA_TESTER (Agent #32) — Build Quality Gate ────────────────────────────
+  qa_tester:
+    # Trigger: event-driven (build.task.completed).
+    # Cognition: hybrid — deterministic subprocess test execution + coverage gate;
+    #   LLM (Sonnet) ONLY on failure to synthesize root-cause narrative from pytest output.
+    #   The verdict (pass/fail) is purely arithmetic — LLM never decides outcome.
+    # HITL: founder review on test failure (actionable: fix or override).
+    cognition:
+      engine: claude_router_conditional  # LLM only on failure path
+      tier: default
+    coverage_threshold: 0.70
+    test_timeout_sec: 120
+    hitl_on_failure: true
+
+  # ─── COMPLIANCE_CHECKER (Agent #33) — Business Rule Enforcement ────────────
+  compliance_checker:
+    # Trigger: cron (nightly 01:00 America/Toronto) + event:client.onboarded.
+    # Cognition: deterministic — CC-1 cost cap, CC-2 data retention, CC-3 API whitelist.
+    #   LLM (Sonnet) ONLY on Monday for weekly trend report narrative.
+    # HITL: critical violations get immediate founder review cards.
+    triggers:
+      - cron
+      - event:client.onboarded
+      - event:deployment.live
+    schedule:
+      cron: "0 1 * * *"   # 01:00 America/Toronto nightly
+    cognition:
+      engine: deterministic_with_weekly_llm_report
+      tier: default
+    scan_window_hours: 24
+    data_retention_days: 90
+    weekly_report_day: 0   # 0 = Monday
+
+  # ─── SECURITY_AUDITOR (Agent #34) — Proactive Security Scanning ────────────
+  security_auditor:
+    # Trigger: cron (nightly 00:30 America/Toronto) + event:deployment.live.
+    # Cognition: deterministic — secret regex scan, pip-audit CVE check, endpoint grep.
+    #   LLM (Sonnet) ONLY on Monday for executive security brief narrative.
+    # HITL: critical findings (secrets, critical CVEs) get immediate HITL escalation.
+    triggers:
+      - cron
+      - event:deployment.live
+    schedule:
+      cron: "30 0 * * *"   # 00:30 America/Toronto nightly
+    cognition:
+      engine: deterministic_with_weekly_llm_brief
+      tier: default
+    weekly_report_day: 0   # 0 = Monday
+
+  # ─── Rate limits (consumed by clients + scheduler) ───────────────────
+  rate_limits:
+    firecrawl:  { rpm: 30 }
+    feedparser: { req_per_feed_sec: 1 }
+    gmail:      { send_per_min: 10 }
+    anthropic:  { tpm: 200000 }
+    serpapi:    { req_per_query_sec: 2 }
+    railway:    { req_per_min: 60 }
+    supabase_management: { req_per_min: 30 }

@@ -1,0 +1,18 @@
+[Unit]
+Description=Omerion Discord Bot
+After=network.target omerion.service
+Wants=omerion.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/omerion
+EnvironmentFile=/root/omerion/discord/.env
+ExecStart=/root/.local/bin/uv run python discord/omerion_bot.py
+Restart=always
+RestartSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
