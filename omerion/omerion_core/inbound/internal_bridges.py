@@ -11,6 +11,7 @@ Railway (GOOGLE_OAUTH_CLIENT_ID / SECRET / REFRESH_TOKEN).
 from __future__ import annotations
 
 import base64
+import datetime
 from email.message import EmailMessage
 from typing import Any, Literal
 
@@ -262,6 +263,338 @@ async def upsert_rd_insights(req: RdInsightsBulkRequest) -> RdInsightsBulkRespon
         duplicates_dropped=duplicates,
         errors=errors,
     )
+
+
+# ── Shared Supabase REST helpers (server-side key) ───────────────────────────
+
+def _sb_creds() -> tuple[str, str] | None:
+    """Return (base_url, service_role_key) or None if not configured."""
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        return None
+    return settings.supabase_url.rstrip("/"), settings.supabase_service_role_key
+
+
+def _sb_get(table: str, params: dict[str, Any]) -> tuple[int, Any]:
+    """GET against PostgREST with the server-held service-role key."""
+    creds = _sb_creds()
+    if not creds:
+        return 0, "omerion_supabase_not_configured"
+    url, key = creds
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            r = client.get(
+                f"{url}/rest/v1/{table}",
+                headers={"apikey": key, "Authorization": f"Bearer {key}"},
+                params=params,
+            )
+        return r.status_code, (r.json() if r.status_code == 200 else r.text[:300])
+    except Exception as exc:  # noqa: BLE001
+        log.error("sb_get_failed", table=table, error=str(exc))
+        return 0, str(exc)
+
+
+def _since(days: int) -> str:
+    return (datetime.datetime.utcnow() - datetime.timedelta(days=days)).isoformat()
+
+
+# ── R2 SEEK — rd_oss_candidates persistence (write) ──────────────────────────
+
+_VALID_INTEGRATION_TYPES = frozenset(
+    {"component", "pattern", "full_module", "reference_only"}
+)
+
+
+class OssCandidateRow(BaseModel):
+    repo_url: str = Field(..., min_length=8)
+    name: str = Field(..., min_length=1)
+    description: str | None = None
+    stars: int = 0
+    language: str | None = None
+    license: str | None = None
+    search_tag: str | None = None
+    integration_type: str = "reference_only"
+    impact_tag: str = "asap"
+    recommendation: str | None = None
+    rubric_fit: float = 0.0
+    rubric_maturity: float = 0.0
+    rubric_composability: float = 0.0
+    rubric_risk: float = 0.0
+    overall_score: float | None = None  # computed if omitted
+    scored_by: str = "haiku"
+
+
+class OssCandidatesBulkRequest(BaseModel):
+    rows: list[OssCandidateRow] = Field(..., min_length=1)
+
+
+class OssCandidatesBulkResponse(BaseModel):
+    upserts: int
+    errors: list[str]
+
+
+@router.post("/rd/oss-candidates", response_model=OssCandidatesBulkResponse)
+async def upsert_oss_candidates(req: OssCandidatesBulkRequest) -> OssCandidatesBulkResponse:
+    """Upsert R2 (SEEK) OSS candidates to Supabase, idempotent on repo_url.
+
+    Managed agents call this with OMERION_WEBHOOK_TOKEN so they never need a
+    SUPABASE_* secret in the Console credential vault. Mirrors /rd/insights.
+    """
+    creds = _sb_creds()
+    if not creds:
+        raise HTTPException(status_code=503, detail="omerion_supabase_not_configured")
+    url, key = creds
+
+    payload: list[dict[str, Any]] = []
+    for row in req.rows:
+        if row.impact_tag not in _VALID_IMPACT_TAGS:
+            raise HTTPException(status_code=400, detail=f"invalid impact_tag: {row.impact_tag}")
+        if row.integration_type not in _VALID_INTEGRATION_TYPES:
+            raise HTTPException(
+                status_code=400, detail=f"invalid integration_type: {row.integration_type}"
+            )
+        overall = row.overall_score
+        if overall is None:
+            overall = round(
+                0.4 * row.rubric_fit
+                + 0.3 * row.rubric_maturity
+                + 0.2 * row.rubric_composability
+                + 0.1 * (1.0 - row.rubric_risk),
+                3,
+            )
+        payload.append(
+            {
+                "repo_url": row.repo_url,
+                "name": row.name,
+                "description": row.description,
+                "stars": row.stars,
+                "language": row.language,
+                "license": row.license,
+                "search_tag": row.search_tag,
+                "integration_type": row.integration_type,
+                "impact_tag": row.impact_tag,
+                "recommendation": row.recommendation,
+                "rubric_fit": row.rubric_fit,
+                "rubric_maturity": row.rubric_maturity,
+                "rubric_composability": row.rubric_composability,
+                "rubric_risk": row.rubric_risk,
+                "overall_score": overall,
+                "scored_by": row.scored_by,
+            }
+        )
+
+    headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates,return=minimal",
+    }
+    endpoint = f"{url}/rest/v1/rd_oss_candidates?on_conflict=repo_url"
+    try:
+        with httpx.Client(timeout=60.0) as client:
+            resp = client.post(endpoint, headers=headers, json=payload)
+    except Exception as exc:  # noqa: BLE001
+        log.error("oss_candidates_bridge_post_failed", error=str(exc))
+        return OssCandidatesBulkResponse(upserts=0, errors=[str(exc)])
+
+    if resp.status_code not in (200, 201, 204):
+        err = f"postgrest_{resp.status_code}: {resp.text[:300]}"
+        log.error("oss_candidates_bridge_bad_status", detail=err)
+        return OssCandidatesBulkResponse(upserts=0, errors=[err])
+
+    log.info("oss_candidates_bridge_ok", rows=len(payload))
+    return OssCandidatesBulkResponse(upserts=len(payload), errors=[])
+
+
+# ── R3 SHAPE — rd_proposals + founder_review_queue (write) ────────────────────
+
+_VALID_PROPOSAL_STATUS = frozenset(
+    {"draft", "submitted", "approved", "rejected", "in_build", "shipped", "retired"}
+)
+
+
+class ProposalRow(BaseModel):
+    title: str = Field(..., min_length=1)
+    problem: str = Field(..., min_length=1)
+    proposed_change: str = Field(..., min_length=1)
+    target_module: str | None = None
+    affected_modules: list[str] = Field(default_factory=list)
+    test_plan: str | None = None
+    rollout_strategy: str | None = None
+    impact_score: str
+    effort_score: str
+    priority_score: float | None = None
+    source_insight_ids: list[str] = Field(default_factory=list)
+    source_oss_ids: list[str] = Field(default_factory=list)
+    status: str = "submitted"
+    run_date: str | None = None
+    # register is NOT a column — folded into the review card context for the founder.
+    register: str | None = None
+
+
+class ProposalsBulkRequest(BaseModel):
+    rows: list[ProposalRow] = Field(..., min_length=1)
+    session_id: str | None = None
+    create_review_tasks: bool = True
+
+
+class ProposalsBulkResponse(BaseModel):
+    proposals_written: int
+    review_rows_created: int
+    proposal_ids: list[str]
+    errors: list[str]
+
+
+@router.post("/rd/proposals", response_model=ProposalsBulkResponse)
+async def submit_rd_proposals(req: ProposalsBulkRequest) -> ProposalsBulkResponse:
+    """Persist R3 (SHAPE) proposals and open a founder review per proposal.
+
+    The agent supplies only proposal content + OMERION_WEBHOOK_TOKEN. The bridge
+    writes rd_proposals (status='submitted' by default) and then mints the HITL
+    approve/reject tokens via the canonical create_founder_review_task() — the
+    agent must NOT mint its own tokens (they gate /hitl/resolve).
+    """
+    creds = _sb_creds()
+    if not creds:
+        raise HTTPException(status_code=503, detail="omerion_supabase_not_configured")
+    url, key = creds
+
+    payload: list[dict[str, Any]] = []
+    registers: list[str | None] = []
+    for row in req.rows:
+        if row.status not in _VALID_PROPOSAL_STATUS:
+            raise HTTPException(status_code=400, detail=f"invalid status: {row.status}")
+        affected = row.affected_modules or ([row.target_module] if row.target_module else [])
+        if not affected:
+            raise HTTPException(
+                status_code=400,
+                detail=f"affected_modules required (NOT NULL): {row.title}",
+            )
+        item: dict[str, Any] = {
+            "title": row.title,
+            "problem": row.problem,
+            "proposed_change": row.proposed_change,
+            "target_module": row.target_module,
+            "affected_modules": affected,
+            "test_plan": row.test_plan,
+            "rollout_strategy": row.rollout_strategy,
+            "impact_score": row.impact_score,
+            "effort_score": row.effort_score,
+            "priority_score": row.priority_score,
+            "source_insight_ids": row.source_insight_ids,
+            "source_oss_ids": row.source_oss_ids,
+            "status": row.status,
+        }
+        if row.run_date:
+            item["run_date"] = row.run_date
+        payload.append(item)
+        registers.append(row.register)
+
+    headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+    }
+    try:
+        with httpx.Client(timeout=60.0) as client:
+            resp = client.post(f"{url}/rest/v1/rd_proposals", headers=headers, json=payload)
+    except Exception as exc:  # noqa: BLE001
+        log.error("rd_proposals_bridge_post_failed", error=str(exc))
+        return ProposalsBulkResponse(
+            proposals_written=0, review_rows_created=0, proposal_ids=[], errors=[str(exc)]
+        )
+
+    if resp.status_code not in (200, 201):
+        err = f"postgrest_{resp.status_code}: {resp.text[:300]}"
+        log.error("rd_proposals_bridge_bad_status", detail=err)
+        return ProposalsBulkResponse(
+            proposals_written=0, review_rows_created=0, proposal_ids=[], errors=[err]
+        )
+
+    created = resp.json()
+    proposal_ids = [r["proposal_id"] for r in created]
+    errors: list[str] = []
+    review_count = 0
+
+    if req.create_review_tasks:
+        from omerion_core.hitl.review import create_founder_review_task
+
+        session_id = req.session_id or f"managed:r3:{created[0].get('run_date', '')}"
+        for r, reg in zip(created, registers):
+            scope = f" · {reg}" if reg else ""
+            try:
+                create_founder_review_task(
+                    agent_name="omerion.r3_strategic_architect",
+                    session_id=session_id,
+                    correlation_id=r["proposal_id"],
+                    subject=f"R3 Proposal ({r.get('run_date', '')}) — {r['title']}",
+                    context_md=(
+                        f"**{r['title']}** · `{r.get('target_module')}`{scope} · "
+                        f"impact `{r['impact_score']}` · effort `{r['effort_score']}` · "
+                        f"RICE `{r.get('priority_score')}`\n\n"
+                        f"**Problem:** {r['problem']}\n\n"
+                        f"**Change:** {r['proposed_change'][:600]}"
+                    ),
+                    draft_ref={"table": "rd_proposals", "proposal_id": r["proposal_id"]},
+                )
+                review_count += 1
+            except Exception as exc:  # noqa: BLE001
+                log.error("rd_proposal_review_task_failed", proposal_id=r["proposal_id"], error=str(exc))
+                errors.append(f"review_task_failed:{r['proposal_id']}:{exc}")
+
+    log.info(
+        "rd_proposals_bridge_ok",
+        proposals_written=len(created),
+        review_rows_created=review_count,
+        errors=len(errors),
+    )
+    return ProposalsBulkResponse(
+        proposals_written=len(created),
+        review_rows_created=review_count,
+        proposal_ids=proposal_ids,
+        errors=errors,
+    )
+
+
+# ── R&D reads (so agents need no Supabase key for context loads) ──────────────
+
+@router.get("/rd/insights")
+async def read_rd_insights(impact_tag: str | None = None, since_days: int = 14) -> dict:
+    """Read recent rd_insights (R2 seed / R3 context). Filtered on ingested_at."""
+    params: dict[str, Any] = {"select": "*", "ingested_at": f"gte.{_since(since_days)}"}
+    if impact_tag:
+        params["impact_tag"] = f"eq.{impact_tag}"
+    status, data = _sb_get("rd_insights", params)
+    if status != 200:
+        raise HTTPException(status_code=502, detail=f"supabase {status}: {data}")
+    return {"rows": data, "count": len(data)}
+
+
+@router.get("/rd/oss-candidates")
+async def read_oss_candidates(
+    min_fit: float = 0.5, max_risk: float = 0.7, since_days: int = 14
+) -> dict:
+    """Read recent rd_oss_candidates (R3 context). Filtered on created_at + rubric."""
+    params = {
+        "select": "*",
+        "rubric_fit": f"gte.{min_fit}",
+        "rubric_risk": f"lt.{max_risk}",
+        "created_at": f"gte.{_since(since_days)}",
+    }
+    status, data = _sb_get("rd_oss_candidates", params)
+    if status != 200:
+        raise HTTPException(status_code=502, detail=f"supabase {status}: {data}")
+    return {"rows": data, "count": len(data)}
+
+
+@router.get("/rd/attribution-reports")
+async def read_attribution_reports(since_days: int = 14) -> dict:
+    """Read recent attribution_reports (R3 context). Filtered on computed_at."""
+    params = {"select": "*", "computed_at": f"gte.{_since(since_days)}"}
+    status, data = _sb_get("attribution_reports", params)
+    if status != 200:
+        raise HTTPException(status_code=502, detail=f"supabase {status}: {data}")
+    return {"rows": data, "count": len(data)}
 
 
 @router.post("/linkedin/send-dm")
