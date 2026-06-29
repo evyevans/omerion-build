@@ -350,6 +350,6 @@ async def video_url(agent_key: str) -> VideoResponse:
     except Exception as exc:
         log.warning("video_url_fetch_failed", agent_key=agent_key, error=str(exc))
         return VideoResponse(url=None)
-    if result.data:
+    if result and result.data:
         return VideoResponse(url=result.data["url"])
     return VideoResponse(url=None)
