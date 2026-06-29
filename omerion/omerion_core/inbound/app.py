@@ -31,6 +31,7 @@ from pydantic import BaseModel, Field
 from omerion_core.inbound.discord_route import router as discord_router
 from omerion_core.inbound.fireflies import router as fireflies_router
 from omerion_core.inbound.hitl import router as hitl_router
+from omerion_core.inbound.hitl import public_router as hitl_public_router
 from omerion_core.inbound.knowledge_base import knowledge_base_router
 from omerion_core.inbound.routes.control_plane import router as control_plane_router
 from omerion_core.inbound.routes.health import router as health_services_router
@@ -68,7 +69,8 @@ app = FastAPI(
 _PROD_ORIGINS = [
     "https://omerion.io",
     "https://www.omerion.io",
-    "https://app.base44.com",
+    "https://omerion-agency-website.vercel.app",
+    # Custom domain added via Vercel dashboard — update this list when set
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -78,6 +80,7 @@ app.add_middleware(
 )
 
 app.include_router(hitl_router)
+app.include_router(hitl_public_router)   # GET /hitl/resolve one-click capability-URL (no bearer; token-authed)
 app.include_router(fireflies_router)
 app.include_router(health_services_router)
 app.include_router(control_plane_router)
