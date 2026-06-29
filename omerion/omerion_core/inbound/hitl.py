@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from omerion_core.hitl.review import get_review, resolve_review
@@ -125,6 +126,103 @@ def resolve(body: ResolveBody, background_tasks: BackgroundTasks) -> ResolveResp
         thread_resumed=resumed,
         correlation_id=updated.get("correlation_id"),
     )
+
+
+# ── One-click capability-URL resolve (GET, no bearer) ────────────────────────
+# The Discord/Sheets approve/reject links emitted by create_founder_review_task are
+# plain hyperlinks: a browser click is a GET with the token in the query string.
+# That cannot satisfy the bearer-protected POST /resolve above, so this router
+# accepts the click directly. AUTH = the 32-byte single-use token in the URL
+# (a capability URL, like an email one-click-approve link); resolve_review() does
+# constant-time token comparison, idempotency, and expiry. This router therefore
+# deliberately has NO require_bearer dependency.
+public_router = APIRouter(
+    prefix="/hitl",
+    tags=["hitl"],
+    dependencies=[Depends(limit("hitl_resolve_click", per_minute=30))],
+)
+
+
+def _resolve_page(title: str, body: str, color: str) -> HTMLResponse:
+    html = (
+        "<!doctype html><html><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+        "<title>Omerion HITL</title></head>"
+        "<body style='font-family:-apple-system,Segoe UI,sans-serif;background:#0b0b0d;"
+        "color:#e7e7ea;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0'>"
+        f"<div style='text-align:center;padding:2rem'><div style='font-size:3rem'>{color}</div>"
+        f"<h1 style='font-weight:600'>{title}</h1><p style='color:#9a9aa2'>{body}</p>"
+        "<p style='color:#6a6a72;font-size:.85rem'>You can close this tab.</p></div></body></html>"
+    )
+    return HTMLResponse(html)
+
+
+@public_router.get("/resolve")
+def resolve_click(
+    review_id: str,
+    token: str,
+    decision: Literal["approved", "rejected"],
+    background_tasks: BackgroundTasks,
+) -> HTMLResponse:
+    """Founder clicks the Approve/Reject hyperlink in #founder-hitl → lands here.
+
+    Auth is the in-URL token (capability URL). Flips the review decision, promotes
+    the linked rd_proposals row (managed agents have no graph to resume), and
+    best-effort resumes a LangGraph thread if session_id is a real run_id.
+    """
+    review = get_review(review_id)
+    if not review:
+        return _resolve_page("Not found", "This review no longer exists.", "⚠️")
+
+    try:
+        updated = resolve_review(review_id, token=token, decision=decision)
+    except PermissionError as exc:
+        msg = str(exc)
+        if "expired" in msg.lower():
+            return _resolve_page("Link expired", "Re-run the agent to create a fresh review.", "⏰")
+        return _resolve_page("Invalid link", "This approval link is not valid.", "🚫")
+    except ValueError:
+        return _resolve_page("Not found", "This review no longer exists.", "⚠️")
+
+    already = updated.get("decision") != decision  # resolve_review is idempotent
+    final = updated.get("decision", decision)
+
+    # Promote the linked draft. Managed cloud agents (e.g. R3) have no LangGraph
+    # thread to resume, so the bridge-created proposal must be advanced here or it
+    # would sit at status='submitted' forever and never reach the build backlog.
+    draft = review.get("draft_ref") or {}
+    if draft.get("table") == "rd_proposals":
+        proposal_id = draft.get("proposal_id") or review.get("correlation_id")
+        if proposal_id:
+            try:
+                from datetime import datetime, timezone
+                from omerion_core.clients.supabase_client import supabase
+                supabase.table("rd_proposals").update({
+                    "status": final,
+                    "founder_decided_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }).eq("proposal_id", str(proposal_id)).eq("status", "submitted").execute()
+            except Exception as exc:  # noqa: BLE001
+                log.error("hitl_proposal_promote_failed", proposal_id=str(proposal_id), error=str(exc))
+
+    # Best-effort LangGraph resume: only when session_id is a resumable run thread.
+    thread_id = review.get("session_id")
+    if thread_id and not str(thread_id).startswith("managed:"):
+        try:
+            run_lifecycle.transition(thread_id, "running")
+            background_tasks.add_task(
+                execute_resume,
+                thread_id,
+                {"decision": final, "review_id": review_id, "source_channel": "discord"},
+            )
+        except Exception as exc:  # noqa: BLE001
+            log.warning("hitl_click_resume_skipped", run_id=thread_id, error=str(exc))
+
+    log.info("hitl_resolved_via_click", review_id=review_id, decision=final, idempotent=already)
+    verb = "Approved" if final == "approved" else "Rejected"
+    icon = "✅" if final == "approved" else "❌"
+    note = " (already recorded)" if already else ""
+    return _resolve_page(f"{verb}{note}", f"“{review.get('subject', '')}”", icon)
 
 
 @router.get("/pending", response_model=list[PendingItem])
