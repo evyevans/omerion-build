@@ -9,6 +9,7 @@ Routes registered:
   POST /webhooks/base44/confirm            — post-payment blueprint confirm
   POST /webhooks/base44/regenerate         — request blueprint regeneration
   POST /api/waitlist                        — email waitlist capture
+  POST /webhooks/base44/newsletter          — newsletter signup capture
   POST /api/contact                         — contact form (sends email)
   GET  /api/videos/{agent_key}             — video URL lookup for VideoPlayer
 """
@@ -300,6 +301,35 @@ async def waitlist(req: WaitlistRequest) -> dict[str, str]:
         log.error("waitlist_insert_failed", email=req.email, error=str(exc))
         raise HTTPException(status_code=500, detail="Failed to save waitlist entry") from exc
     log.info("waitlist_entry_added", email=req.email)
+    return {"ok": "true"}
+
+
+# ── Newsletter ──────────────────────────────────────────────────────────────────
+
+class NewsletterRequest(BaseModel):
+    email: str = Field(..., min_length=3, max_length=254)
+    name: str | None = Field(default=None, max_length=200)
+    industry: str | None = Field(default=None, max_length=100)
+    role: str | None = Field(default=None, max_length=100)
+
+
+@router.post("/webhooks/base44/newsletter")
+async def newsletter(req: NewsletterRequest) -> dict[str, str]:
+    try:
+        supabase.table("newsletter_subscribers").upsert(
+            {
+                "email": req.email,
+                "name": req.name,
+                "industry": req.industry,
+                "role": req.role,
+            },
+            on_conflict="email",
+            ignore_duplicates=True,
+        ).execute()
+    except Exception as exc:
+        log.error("newsletter_insert_failed", email=req.email, error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to save newsletter signup") from exc
+    log.info("newsletter_subscriber_added", email=req.email)
     return {"ok": "true"}
 
 
