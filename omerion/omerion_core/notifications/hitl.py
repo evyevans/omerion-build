@@ -23,7 +23,9 @@ def notify_hitl_review(
     approve_url: str,
     reject_url: str,
     correlation_id: UUID | str | None = None,
-) -> bool:
+) -> str | None:
+    """Post the HITL card to Discord. Returns the message id (for later in-place
+    edit on resolve), or None if the webhook is unconfigured or delivery failed."""
     log.info("hitl_notify_dispatch", transport="discord_webhook", review_id=str(review_id))
 
     try:
@@ -38,4 +40,4 @@ def notify_hitl_review(
         )
     except Exception as exc:  # noqa: BLE001
         log.warning("hitl_discord_webhook_exception", error=str(exc))
-        return False
+        return None

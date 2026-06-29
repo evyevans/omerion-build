@@ -82,7 +82,7 @@ def create_founder_review_task(
     # the review from being created.
     try:
         from omerion_core.notifications.hitl import notify_hitl_review
-        notify_hitl_review(
+        message_id = notify_hitl_review(
             review_id=review_id,
             agent_name=agent_name,
             session_id=session_id,
@@ -92,6 +92,15 @@ def create_founder_review_task(
             reject_url=reject_url,
             correlation_id=corr,
         )
+        # Persist the Discord message id so resolve_review() can edit the card
+        # in place (strip the approve/reject links) once the founder decides.
+        if message_id:
+            try:
+                supabase.table("founder_review_queue").update(
+                    {"discord_message_id": message_id}
+                ).eq("review_id", str(review_id)).execute()
+            except Exception as exc:  # noqa: BLE001
+                log.warning("hitl_message_id_store_failed", review_id=review_id, error=str(exc))
     except Exception as exc:  # noqa: BLE001
         log.warning("hitl_notify_skipped", review_id=review_id, error=str(exc))
 
@@ -161,13 +170,33 @@ def resolve_review(
                 raise PermissionError(f"HITL review {review_id} has expired — re-run the agent to create a new review")
         except (ValueError, AttributeError):
             pass  # unparseable expires_at — allow through
+    decided_at = datetime.now(timezone.utc).isoformat()
     supabase.table("founder_review_queue").update({
         "decision": decision,
         "decision_notes": notes,
-        "decided_at": datetime.now(timezone.utc).isoformat(),
+        "decided_at": decided_at,
     }).eq("review_id", str(review_id)).execute()
 
     log.info("hitl_review_resolved", review_id=str(review_id), decision=decision)
+
+    # Edit the original Discord card to its resolved state so the founder gets
+    # feedback and the live approve/reject links disappear. Best-effort: a failed
+    # edit must never break the decision that was already recorded above.
+    message_id = review.get("discord_message_id")
+    if message_id:
+        try:
+            from omerion_core.notifications.discord_webhook import edit_hitl_resolved
+            edit_hitl_resolved(
+                message_id=message_id,
+                review_id=str(review_id),
+                agent_name=review.get("agent_name", "agent"),
+                subject=review.get("subject", ""),
+                decision=decision,
+                decided_at=decided_at,
+            )
+        except Exception as exc:  # noqa: BLE001
+            log.warning("hitl_card_edit_skipped", review_id=str(review_id), error=str(exc))
+
     return get_review(review_id) or {}
 
 
